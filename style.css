@@ -2207,6 +2207,36 @@ p {
     color: var(--accent-gold);
 }
 
+.assistant-audio-button {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    gap: 7px;
+    margin-top: 9px;
+    padding: 7px 10px;
+    border: 1px solid rgba(10, 50, 34, 0.2);
+    border-radius: 4px;
+    background: #f7f2e7;
+    color: var(--primary-green);
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.assistant-audio-button:hover,
+.assistant-audio-button:focus-visible,
+.assistant-audio-button.is-speaking {
+    border-color: var(--accent-gold);
+    background: var(--primary-green);
+    color: #fff;
+}
+
+.assistant-audio-button:focus-visible {
+    outline: 3px solid rgba(197, 157, 75, 0.6);
+    outline-offset: 2px;
+}
+
 .assistant-message.typing {
     display: inline-flex;
     align-items: center;
