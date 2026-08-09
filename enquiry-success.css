@@ -95,8 +95,14 @@
     animation: successSceneArrive 550ms ease both;
 }
 
+.enquiry-success-page.is-confirmed .success-moving-scenery {
+    animation: successSceneryJourney 4.1s cubic-bezier(.18, .66, .3, 1) 300ms both;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
 .enquiry-success-page.is-confirmed .success-houseboat {
-    animation: successBoatJourney 2.05s cubic-bezier(.22, .72, .3, 1) 350ms both;
+    animation: successBoatJourney 4.1s cubic-bezier(.18, .68, .28, 1) 300ms both;
     transform-origin: center;
 }
 
@@ -127,7 +133,7 @@
 }
 
 .enquiry-success-page.is-confirmed .success-check-marker {
-    animation: successMarkerArrive 650ms cubic-bezier(.2, .8, .2, 1) 1.9s both;
+    animation: successMarkerArrive 550ms cubic-bezier(.2, .8, .2, 1) 4.25s both;
     transform-box: fill-box;
     transform-origin: center bottom;
 }
@@ -135,16 +141,17 @@
 .enquiry-success-page.is-confirmed .success-check {
     stroke-dasharray: 34;
     stroke-dashoffset: 34;
-    animation: successCheckDraw 500ms ease 2.15s forwards;
+    animation: successCheckDraw 450ms ease 4.45s forwards;
 }
 
 .enquiry-success-copy {
     display: flex;
     position: absolute;
     z-index: 3;
-    right: 48px;
+    right: auto;
     bottom: 0;
-    width: min(540px, calc(100% - 96px));
+    left: 48px;
+    width: min(510px, calc(100% - 96px));
     min-height: 330px;
     border: 1px solid rgba(13, 71, 52, 0.14);
     border-radius: 7px;
@@ -156,7 +163,7 @@
 }
 
 .enquiry-success-page.is-confirmed .enquiry-success-copy {
-    animation: successCopyArrive 600ms cubic-bezier(.2, .75, .25, 1) 2.05s both;
+    animation: successCopyArrive 600ms cubic-bezier(.2, .75, .25, 1) 4.65s both;
 }
 
 .enquiry-success-icon {
@@ -216,9 +223,9 @@
     animation: successContentArrive 500ms ease both;
 }
 
-.enquiry-success-page.is-confirmed .enquiry-next-steps { animation-delay: 2.4s; }
-.enquiry-success-page.is-confirmed .enquiry-success-final-actions { animation-delay: 2.55s; }
-.enquiry-success-page.is-confirmed .enquiry-keep-exploring { animation-delay: 2.7s; }
+.enquiry-success-page.is-confirmed .enquiry-next-steps { animation-delay: 4.9s; }
+.enquiry-success-page.is-confirmed .enquiry-success-final-actions { animation-delay: 5.05s; }
+.enquiry-success-page.is-confirmed .enquiry-keep-exploring { animation-delay: 5.2s; }
 
 .enquiry-section-heading {
     max-width: 700px;
@@ -469,6 +476,7 @@
     position: relative;
     right: auto;
     bottom: auto;
+    left: auto;
     width: 100%;
     min-height: 390px;
     align-items: center;
@@ -486,9 +494,15 @@
 }
 
 @keyframes successBoatJourney {
-    0% { opacity: 0; transform: translate(-320px, 4px) rotate(-0.6deg); }
-    14% { opacity: 1; }
-    82%, 100% { opacity: 1; transform: translate(72px, -2px) rotate(0); }
+    0% { opacity: 0; transform: translate(-360px, 5px) rotate(-0.7deg); }
+    10% { opacity: 1; }
+    82% { opacity: 1; transform: translate(132px, -3px) rotate(0.15deg); }
+    100% { opacity: 1; transform: translate(145px, -2px) rotate(0); }
+}
+
+@keyframes successSceneryJourney {
+    0% { transform: translateX(26px) scale(1.07); }
+    100% { transform: translateX(-28px) scale(1.07); }
 }
 
 @keyframes successCopyArrive {
@@ -538,6 +552,7 @@
         position: relative;
         right: auto;
         bottom: auto;
+        left: auto;
         width: calc(100% - 40px);
         min-height: 0;
         margin: -58px auto 0;
@@ -634,6 +649,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .success-moving-scenery,
     .success-houseboat,
     .success-palm-crown,
     .success-ripple,
@@ -651,6 +667,7 @@
     }
 
     .enquiry-success-page.is-confirmed .enquiry-success-visual,
+    .enquiry-success-page.is-confirmed .success-moving-scenery,
     .enquiry-success-page.is-confirmed .success-houseboat,
     .enquiry-success-page.is-confirmed .success-check-marker,
     .enquiry-success-page.is-confirmed .success-check,
