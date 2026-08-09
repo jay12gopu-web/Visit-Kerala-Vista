@@ -36,7 +36,7 @@
 .enquiry-success-main {
     display: block;
     min-height: auto;
-    padding: 132px 20px 84px;
+    padding: 116px 20px 82px;
     background:
         radial-gradient(circle at 8% 8%, rgba(197, 157, 75, 0.12), transparent 28rem),
         linear-gradient(180deg, #f8f5ee 0%, #f3f0e7 100%);
@@ -59,21 +59,18 @@
 }
 
 .enquiry-success-intro {
-    display: grid;
-    grid-template-columns: minmax(0, 1.12fr) minmax(340px, 0.88fr);
-    align-items: stretch;
-    overflow: hidden;
-    border: 1px solid rgba(13, 71, 52, 0.13);
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 24px 70px rgba(18, 56, 43, 0.14);
+    position: relative;
+    padding-bottom: 108px;
 }
 
 .enquiry-success-visual {
     position: relative;
-    min-height: 390px;
+    min-height: 500px;
     overflow: hidden;
+    border: 1px solid rgba(13, 71, 52, 0.18);
+    border-radius: 8px;
     background: #0b4a36;
+    box-shadow: 0 26px 72px rgba(18, 56, 43, 0.18);
 }
 
 .enquiry-success-visual::after {
@@ -90,12 +87,16 @@
 .enquiry-success-visual svg {
     width: 100%;
     height: 100%;
-    min-height: 390px;
+    min-height: 500px;
     object-fit: cover;
 }
 
-.success-houseboat {
-    animation: successBoatDrift 7s ease-in-out infinite alternate;
+.enquiry-success-page.is-confirmed .enquiry-success-visual {
+    animation: successSceneArrive 550ms ease both;
+}
+
+.enquiry-success-page.is-confirmed .success-houseboat {
+    animation: successBoatJourney 2.05s cubic-bezier(.22, .72, .3, 1) 350ms both;
     transform-origin: center;
 }
 
@@ -125,24 +126,37 @@
     animation-duration: 12s;
 }
 
-.success-check-marker {
-    animation: successMarkerArrive 900ms cubic-bezier(.2, .8, .2, 1) 350ms both;
+.enquiry-success-page.is-confirmed .success-check-marker {
+    animation: successMarkerArrive 650ms cubic-bezier(.2, .8, .2, 1) 1.9s both;
     transform-box: fill-box;
     transform-origin: center bottom;
 }
 
-.success-check {
+.enquiry-success-page.is-confirmed .success-check {
     stroke-dasharray: 34;
     stroke-dashoffset: 34;
-    animation: successCheckDraw 650ms ease 1s forwards;
+    animation: successCheckDraw 500ms ease 2.15s forwards;
 }
 
 .enquiry-success-copy {
     display: flex;
-    min-width: 0;
+    position: absolute;
+    z-index: 3;
+    right: 48px;
+    bottom: 0;
+    width: min(540px, calc(100% - 96px));
+    min-height: 330px;
+    border: 1px solid rgba(13, 71, 52, 0.14);
+    border-radius: 7px;
     flex-direction: column;
     justify-content: center;
-    padding: clamp(38px, 5vw, 68px);
+    padding: clamp(34px, 4vw, 54px);
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 24px 64px rgba(18, 56, 43, 0.2);
+}
+
+.enquiry-success-page.is-confirmed .enquiry-success-copy {
+    animation: successCopyArrive 600ms cubic-bezier(.2, .75, .25, 1) 2.05s both;
 }
 
 .enquiry-success-icon {
@@ -177,6 +191,13 @@
     line-height: 1.75;
 }
 
+.enquiry-success-copy .enquiry-success-thanks {
+    margin-top: 11px;
+    color: #8d6a2d;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
 .enquiry-unconfirmed-actions {
     display: flex;
     flex-wrap: wrap;
@@ -188,6 +209,16 @@
 .enquiry-keep-exploring {
     margin-top: 72px;
 }
+
+.enquiry-success-page.is-confirmed .enquiry-next-steps,
+.enquiry-success-page.is-confirmed .enquiry-success-final-actions,
+.enquiry-success-page.is-confirmed .enquiry-keep-exploring {
+    animation: successContentArrive 500ms ease both;
+}
+
+.enquiry-success-page.is-confirmed .enquiry-next-steps { animation-delay: 2.4s; }
+.enquiry-success-page.is-confirmed .enquiry-success-final-actions { animation-delay: 2.55s; }
+.enquiry-success-page.is-confirmed .enquiry-keep-exploring { animation-delay: 2.7s; }
 
 .enquiry-section-heading {
     max-width: 700px;
@@ -287,7 +318,7 @@
 .enquiry-explore-card {
     position: relative;
     display: block;
-    min-height: 390px;
+    min-height: 330px;
     overflow: hidden;
     border-radius: 7px;
     background: #0b4a36;
@@ -381,7 +412,7 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 12px;
-    margin-top: 42px;
+    margin-top: 36px;
 }
 
 .enquiry-success-final-actions .btn,
@@ -431,10 +462,14 @@
 .enquiry-success-page.is-unconfirmed .enquiry-success-intro {
     max-width: 720px;
     margin: 0 auto;
-    grid-template-columns: 1fr;
+    padding-bottom: 0;
 }
 
 .enquiry-success-page.is-unconfirmed .enquiry-success-copy {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
     min-height: 390px;
     align-items: center;
     text-align: center;
@@ -445,9 +480,25 @@
     margin-left: auto;
 }
 
-@keyframes successBoatDrift {
-    from { transform: translate(-16px, 2px) rotate(-0.4deg); }
-    to { transform: translate(24px, -3px) rotate(0.35deg); }
+@keyframes successSceneArrive {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes successBoatJourney {
+    0% { opacity: 0; transform: translate(-320px, 4px) rotate(-0.6deg); }
+    14% { opacity: 1; }
+    82%, 100% { opacity: 1; transform: translate(72px, -2px) rotate(0); }
+}
+
+@keyframes successCopyArrive {
+    from { opacity: 0; transform: translateY(22px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes successContentArrive {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes successPalmSway {
@@ -474,16 +525,22 @@
     }
 
     .enquiry-success-intro {
-        grid-template-columns: 1fr;
+        padding-bottom: 0;
     }
 
     .enquiry-success-visual,
     .enquiry-success-visual svg {
-        min-height: 300px;
-        max-height: 330px;
+        min-height: 360px;
+        max-height: 390px;
     }
 
     .enquiry-success-copy {
+        position: relative;
+        right: auto;
+        bottom: auto;
+        width: calc(100% - 40px);
+        min-height: 0;
+        margin: -58px auto 0;
         align-items: center;
         text-align: center;
     }
@@ -509,11 +566,13 @@
 
     .enquiry-success-visual,
     .enquiry-success-visual svg {
-        min-height: 230px;
-        max-height: 250px;
+        min-height: 265px;
+        max-height: 285px;
     }
 
     .enquiry-success-copy {
+        width: calc(100% - 22px);
+        margin-top: -34px;
         padding: 34px 23px 38px;
     }
 
@@ -585,6 +644,23 @@
 
     .success-check {
         stroke-dashoffset: 0;
+    }
+
+    .enquiry-success-page.is-confirmed .success-check {
+        stroke-dashoffset: 0;
+    }
+
+    .enquiry-success-page.is-confirmed .enquiry-success-visual,
+    .enquiry-success-page.is-confirmed .success-houseboat,
+    .enquiry-success-page.is-confirmed .success-check-marker,
+    .enquiry-success-page.is-confirmed .success-check,
+    .enquiry-success-page.is-confirmed .enquiry-success-copy,
+    .enquiry-success-page.is-confirmed .enquiry-next-steps,
+    .enquiry-success-page.is-confirmed .enquiry-success-final-actions,
+    .enquiry-success-page.is-confirmed .enquiry-keep-exploring {
+        opacity: 1;
+        transform: none;
+        animation: none;
     }
 
     .enquiry-explore-card img,

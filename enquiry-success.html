@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&amp;family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link rel="stylesheet" href="style.css?v=20260807-restored1">
-    <link rel="stylesheet" href="enquiry-success.css?v=20260808-2">
+    <link rel="stylesheet" href="enquiry-success.css?v=20260809-3">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%200%2064%2064%22><rect width=%2264%22 height=%2264%22 rx=%2210%22 fill=%22%23062217%22/><text x=%2232%22 y=%2246%22 font-size=%2246%22 text-anchor=%22middle%22 fill=%22%23c59d4b%22>%26</text></svg>">
 </head>
 <body id="top" class="enquiry-success-page" data-enquiry-success>
@@ -16,7 +16,7 @@
 <main class="enquiry-success-main">
     <article class="enquiry-success-card">
         <section class="enquiry-success-intro">
-            <div class="enquiry-success-visual" data-confirmed-only aria-hidden="true">
+            <div class="enquiry-success-visual" data-confirmed-only hidden aria-hidden="true">
                 <svg viewBox="0 0 900 420" preserveAspectRatio="xMidYMid slice" focusable="false">
                     <defs>
                         <linearGradient id="successSky" x1="0" y1="0" x2="0" y2="1">
@@ -69,21 +69,24 @@
                         <rect x="458" y="226" width="46" height="32" rx="3" fill="#155040"/>
                         <circle cx="550" cy="296" r="7" fill="#e6c675"/>
                     </g>
-                    <g class="success-check-marker" transform="translate(712 150)">
-                        <path d="M0 35C0 15 16 0 36 0S72 15 72 35C72 61 36 96 36 96S0 61 0 35Z" fill="#c9a24f"/>
-                        <circle cx="36" cy="35" r="23" fill="#fff8e8"/>
-                        <path class="success-check" d="M25 35L33 43L49 27" fill="none" stroke="#0b4a36" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                    <g transform="translate(712 150)">
+                        <g class="success-check-marker">
+                            <path d="M0 35C0 15 16 0 36 0S72 15 72 35C72 61 36 96 36 96S0 61 0 35Z" fill="#c9a24f"/>
+                            <circle cx="36" cy="35" r="23" fill="#fff8e8"/>
+                            <path class="success-check" d="M25 35L33 43L49 27" fill="none" stroke="#0b4a36" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                        </g>
                     </g>
                 </svg>
             </div>
 
             <div class="enquiry-success-copy">
-                <span class="enquiry-success-icon" data-confirmed-only><i class="fa-solid fa-check" aria-hidden="true"></i></span>
+                <span class="enquiry-success-icon" data-confirmed-only hidden><i class="fa-solid fa-check" aria-hidden="true"></i></span>
                 <span class="subtitle" id="enquiry-success-kicker">Enquiry Status</span>
                 <div role="status" aria-live="polite">
                     <h1 id="enquiry-success-title">Checking your enquiry</h1>
                     <p id="enquiry-success-message">Please wait while we confirm the submission status.</p>
                 </div>
+                <p class="enquiry-success-thanks" data-confirmed-only hidden>Thank you for exploring Visit Kerala.</p>
                 <div class="enquiry-unconfirmed-actions" data-unconfirmed-only hidden>
                     <a href="itineraries.html#trip-finder-title" class="btn btn-primary">Open Plan Finder <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
                     <a href="index.html" class="btn btn-outline">Return Home</a>
@@ -91,16 +94,16 @@
             </div>
         </section>
 
-        <section class="enquiry-next-steps" data-confirmed-only aria-labelledby="enquiry-next-heading">
+        <section class="enquiry-next-steps" data-confirmed-only hidden aria-labelledby="enquiry-next-heading">
             <div class="enquiry-section-heading">
                 <span class="subtitle">What Happens Next</span>
-                <h2 id="enquiry-next-heading">A calm start to your Kerala journey</h2>
+                <h2 id="enquiry-next-heading">Your enquiry has reached its destination</h2>
                 <p>Your enquiry has been received. Review the travel ideas below while you continue exploring Kerala.</p>
             </div>
             <ol class="enquiry-progress" aria-label="Trip enquiry progress">
                 <li class="is-complete">
                     <span class="enquiry-progress-marker"><i class="fa-solid fa-check" aria-hidden="true"></i></span>
-                    <span><strong>Enquiry Received</strong><small>Your trip details were submitted.</small></span>
+                    <span><strong>Enquiry Sent</strong><small>Your trip details were submitted.</small></span>
                 </li>
                 <li>
                     <span class="enquiry-progress-marker">2</span>
@@ -113,34 +116,34 @@
             </ol>
         </section>
 
-        <section class="enquiry-keep-exploring" data-confirmed-only aria-labelledby="keep-exploring-heading">
+        <div class="enquiry-success-final-actions" data-confirmed-only hidden>
+            <a href="destinations.html" class="btn btn-primary">Explore More of Kerala <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            <a href="index.html" class="btn btn-outline">Return Home</a>
+        </div>
+
+        <section class="enquiry-keep-exploring" data-confirmed-only hidden aria-labelledby="keep-exploring-heading">
             <div class="enquiry-section-heading">
                 <span class="subtitle">Explore While You Are Here</span>
-                <h2 id="keep-exploring-heading">Keep Exploring Kerala</h2>
+                <h2 id="keep-exploring-heading">While You&rsquo;re Here&hellip;</h2>
             </div>
             <div class="enquiry-explore-grid">
-                <a href="destination-munnar.html" class="enquiry-explore-card">
-                    <img src="68.jpg" alt="Travellers overlooking the tea hills around Munnar" loading="lazy">
+                <a href="destinations.html" class="enquiry-explore-card">
+                    <img src="Varkala-Beach.webp" alt="Kerala's Varkala coastline" loading="lazy">
                     <span class="enquiry-explore-overlay"></span>
-                    <span class="enquiry-explore-content"><small>Hill Country</small><strong>Munnar</strong><span>Misty tea hills and mountain views</span><em>Explore Munnar <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></em></span>
+                    <span class="enquiry-explore-content"><small>Places</small><strong>Explore Destinations</strong><span>Find your next Kerala favourite.</span><em>Explore <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></em></span>
                 </a>
-                <a href="destination-alappuzha.html" class="enquiry-explore-card">
-                    <img src="munroe-island-canoe.jpg" alt="Visitors travelling by canoe through Kerala's backwaters" loading="lazy">
+                <a href="itineraries.html#trip-finder-title" class="enquiry-explore-card">
+                    <img src="68.jpg" alt="Kerala's green tea hills" loading="lazy">
                     <span class="enquiry-explore-overlay"></span>
-                    <span class="enquiry-explore-content"><small>Backwaters</small><strong>Alappuzha</strong><span>Slow journeys through Kerala's waterways</span><em>See the Backwaters <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></em></span>
+                    <span class="enquiry-explore-content"><small>Plan Finder</small><strong>Find Your Perfect Plan</strong><span>Match a route to your travel style.</span><em>Start Planning <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></em></span>
                 </a>
-                <a href="itineraries.html" class="enquiry-explore-card">
-                    <img src="Varkala-Beach.webp" alt="Varkala's red cliffs and sandy coastline" loading="lazy">
+                <a href="experiences.html" class="enquiry-explore-card">
+                    <img src="tourists-thekkady-boating.webp" alt="Visitors boating through Kerala's forest landscape" loading="lazy">
                     <span class="enquiry-explore-overlay"></span>
-                    <span class="enquiry-explore-content"><small>Plan Your Journey</small><strong>Travel Plans</strong><span>Find an itinerary that fits your trip</span><em>View Travel Plans <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></em></span>
+                    <span class="enquiry-explore-content"><small>Things To Do</small><strong>Discover Experiences</strong><span>Explore Kerala through water, hills and culture.</span><em>Discover <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></em></span>
                 </a>
             </div>
         </section>
-
-        <div class="enquiry-success-final-actions" data-confirmed-only>
-            <a href="destinations.html" class="btn btn-primary">Explore Kerala <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
-            <a href="index.html" class="btn btn-outline">Return Home</a>
-        </div>
     </article>
 </main>
 <footer class="site-footer" aria-labelledby="site-footer-heading">
@@ -151,6 +154,6 @@
     <div class="container site-footer-disclaimer" role="note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><p>Prices, routes, travel times, public ratings and availability are planning estimates and may change. Verify final details with official sources and service providers.</p></div>
     <div class="site-footer-bottom"><div class="container site-footer-bottom-inner"><div class="site-footer-notice"><p>&copy; 2026 Visit Kerala Student Tourism Project</p><p>Created for educational and exhibition purposes. Not affiliated with or endorsed by Kerala Tourism.</p></div><div class="footer-utility-actions"><a href="#top" class="footer-utility-control" aria-label="Back to top"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Back to top</a><button type="button" class="footer-utility-control footer-copy-link" data-copy-page-link aria-label="Copy this page link"><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy Page Link</button><span class="footer-copy-status" data-copy-page-status role="status" aria-live="polite"></span></div></div></div>
 </footer>
-<script src="script.js?v=20260807-restored1"></script><script src="trip-enquiry.js?v=20260807-restored1"></script><script src="enquiry-success.js?v=20260808-1"></script>
+<script src="script.js?v=20260807-restored1"></script><script src="enquiry-success.js?v=20260809-2"></script>
 </body>
 </html>
