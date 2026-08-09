@@ -1992,7 +1992,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const startAutomaticSlide = () => {
         stopAutomaticSlide();
-        if (!reducedMotion.matches) timer = window.setInterval(showNext, 5500);
+        if (!reducedMotion.matches) timer = window.setInterval(showNext, 4500);
     };
 
     previous.addEventListener('click', () => {
@@ -2003,8 +2003,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showNext();
         startAutomaticSlide();
     });
-    carousel.addEventListener('mouseenter', stopAutomaticSlide);
-    carousel.addEventListener('mouseleave', startAutomaticSlide);
     carousel.addEventListener('focusin', stopAutomaticSlide);
     carousel.addEventListener('focusout', event => {
         if (!carousel.contains(event.relatedTarget)) startAutomaticSlide();
