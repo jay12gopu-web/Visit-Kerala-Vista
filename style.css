@@ -4844,17 +4844,6 @@ p {
     font-size: 0.61rem;
 }
 
-.home-reviews-action {
-    margin-top: 27px;
-    text-align: center;
-}
-
-.home-reviews-action .card-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-}
-
 .home-review-controls {
     display: flex;
     margin-top: 20px;
