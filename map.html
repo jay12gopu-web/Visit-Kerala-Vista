@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="leaflet.css?v=1.9.4">
     <link rel="stylesheet" href="style.css?v=20260807-restored1">
-    <link rel="stylesheet" href="map.css?v=20260807-restored1">
+    <link rel="stylesheet" href="map.css?v=20260809-transport2">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%200%2064%2064%22><rect width=%2264%22 height=%2264%22 rx=%2210%22 fill=%22%23062217%22/><text x=%2232%22 y=%2246%22 font-size=%2246%22 text-anchor=%22middle%22 fill=%22%23c59d4b%22>%26</text></svg>">
 </head>
 <body id="top" class="map-page">
@@ -128,16 +128,16 @@
                 <article><i class="fa-solid fa-flag-checkered" aria-hidden="true"></i><span>Destination</span><strong id="summary-to">-</strong></article>
                 <article><i class="fa-solid fa-road" aria-hidden="true"></i><span>Approx. road distance</span><strong id="summary-distance">-</strong></article>
                 <article><i class="fa-regular fa-clock" aria-hidden="true"></i><span>Estimated driving time</span><strong id="summary-time">-</strong></article>
-                <article><i class="fa-solid fa-car-side" aria-hidden="true"></i><span>Recommended method</span><strong id="summary-method">-</strong></article>
+                <article><i class="fa-solid fa-car-side" id="summary-method-icon" aria-hidden="true"></i><span>Recommended method</span><strong id="summary-method">-</strong></article>
                 <article><i class="fa-solid fa-route" aria-hidden="true"></i><span>Route type</span><strong id="summary-type">-</strong></article>
             </div>
             <p class="route-estimate-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Road distances and driving times are approximate. Traffic, weather, roadworks, breaks and seasonal conditions can change the journey.</p>
 
             <div class="journey-information">
                 <article class="journey-panel journey-overview-panel"><span class="journey-panel-icon"><i class="fa-regular fa-compass" aria-hidden="true"></i></span><div><span class="journey-label">Journey Overview</span><h3 id="journey-heading">A Kerala road journey</h3><p id="journey-overview"></p></div></article>
-                <section class="journey-panel journey-stops-panel" aria-labelledby="journey-stops-title"><div class="journey-panel-heading"><span class="journey-panel-icon"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i></span><div><span class="journey-label">Pause Along The Way</span><h3 id="journey-stops-title">Recommended Stops</h3></div></div><div class="journey-stop-grid" id="journey-stops"></div></section>
+                <section class="journey-panel journey-stops-panel" id="journey-stops-panel" aria-labelledby="journey-stops-title"><div class="journey-panel-heading"><span class="journey-panel-icon"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i></span><div><span class="journey-label">Pause Along The Way</span><h3 id="journey-stops-title">Recommended Stops</h3></div></div><div class="journey-stop-grid" id="journey-stops"></div></section>
                 <section class="journey-panel" aria-labelledby="journey-advice-title"><div class="journey-panel-heading"><span class="journey-panel-icon"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i></span><div><span class="journey-label">Travel Well</span><h3 id="journey-advice-title">Travel Advice</h3></div></div><ul class="journey-list" id="journey-advice"></ul></section>
-                <section class="journey-panel" aria-labelledby="journey-transport-title"><div class="journey-panel-heading"><span class="journey-panel-icon"><i class="fa-solid fa-bus-simple" aria-hidden="true"></i></span><div><span class="journey-label">Ways To Travel</span><h3 id="journey-transport-title">Transport Options</h3></div></div><ul class="transport-list" id="journey-transport"></ul></section>
+                <section class="journey-panel journey-transport-panel" aria-labelledby="journey-transport-title"><div class="journey-panel-heading"><span class="journey-panel-icon"><i class="fa-solid fa-bus-simple" aria-hidden="true"></i></span><div><span class="journey-label">Ways To Travel</span><h3 id="journey-transport-title">Transport Options</h3></div></div><div class="transport-comparison" id="journey-transport" aria-live="polite"></div></section>
                 <aside class="matching-plan" aria-labelledby="matching-plan-title"><span class="matching-plan-kicker">Matching Vacation Plan</span><h3 id="matching-plan-title">Suggested Kerala itinerary</h3><div class="matching-plan-meta"><span id="matching-plan-duration">-</span><span id="matching-plan-pace">-</span></div><p id="matching-plan-reason"></p><a href="itineraries.html" id="matching-plan-link">View Full Plan <i class="fa-solid fa-arrow-right-long" aria-hidden="true"></i></a></aside>
             </div>
         </div>
@@ -198,6 +198,6 @@
 
 <script src="leaflet.js?v=1.9.4"></script>
 <script src="script.js?v=20260807-restored1"></script>
-<script src="map.js?v=20260809-transport1"></script>
+<script src="map.js?v=20260809-transport3"></script>
 </body>
 </html>

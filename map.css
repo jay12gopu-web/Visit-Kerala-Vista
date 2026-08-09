@@ -836,6 +836,194 @@
     color: var(--primary-green);
 }
 
+.journey-transport-panel {
+    grid-column: 1 / -1;
+}
+
+.transport-comparison {
+    display: grid;
+    gap: 24px;
+}
+
+.recommended-mode {
+    display: grid;
+    padding: 20px 22px;
+    border-left: 4px solid var(--accent-gold);
+    background: #f6faf7;
+    gap: 6px;
+}
+
+.recommended-mode > span,
+.mode-option-number,
+.mode-options-heading > span {
+    color: var(--accent-gold);
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.recommended-mode > strong {
+    color: var(--primary-green);
+    font: 700 1.25rem var(--font-serif);
+}
+
+.recommended-mode > strong i {
+    margin-right: 8px;
+    color: var(--accent-gold);
+}
+
+.recommended-mode p,
+.transport-fare-note {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    line-height: 1.6;
+}
+
+.mode-options-group {
+    display: grid;
+    gap: 12px;
+}
+
+.mode-options-heading {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.mode-options-heading i {
+    color: var(--accent-gold);
+}
+
+.mode-options-heading h4 {
+    margin: 0;
+    color: var(--primary-green);
+    font: 700 1rem var(--font-serif);
+}
+
+.mode-options-heading > span {
+    margin-left: auto;
+}
+
+.mode-option-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.mode-option-card,
+.transport-unavailable,
+.car-option-card {
+    padding: 18px;
+    border: 1px solid rgba(10, 50, 34, 0.12);
+    border-radius: 5px;
+    background: #fbfcfa;
+}
+
+.mode-option-card h5 {
+    margin: 6px 0 5px;
+    color: var(--primary-green);
+    font: 700 0.9rem var(--font-serif);
+}
+
+.mode-route {
+    min-height: 34px;
+    color: #40574e;
+    font-size: 0.66rem;
+    line-height: 1.45;
+}
+
+.mode-option-card > strong {
+    display: block;
+    margin-top: 11px;
+    color: var(--primary-green);
+    font-size: 0.84rem;
+}
+
+.mode-option-card > small,
+.transport-unavailable small {
+    display: block;
+    margin-top: 2px;
+    color: var(--text-muted);
+    font-size: 0.58rem;
+}
+
+.mode-option-meta {
+    display: flex;
+    margin-top: 13px;
+    padding-top: 11px;
+    border-top: 1px solid rgba(10, 50, 34, 0.09);
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.mode-option-meta span {
+    padding: 5px 7px;
+    color: var(--primary-green);
+    background: #eef4ef;
+    font-size: 0.55rem;
+    font-weight: 700;
+}
+
+.transport-unavailable {
+    grid-column: 1 / -1;
+}
+
+.transport-unavailable strong,
+.transport-unavailable span {
+    display: block;
+}
+
+.transport-unavailable strong {
+    color: var(--primary-green);
+    font-size: 0.78rem;
+}
+
+.transport-unavailable span {
+    margin: 3px 0;
+    color: #8b4b3c;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.car-option-card {
+    display: grid;
+    grid-template-columns: 0.8fr 0.8fr 1.4fr;
+    gap: 18px;
+}
+
+.car-option-card div {
+    min-width: 0;
+}
+
+.car-option-card span,
+.car-option-card strong {
+    display: block;
+}
+
+.car-option-card span {
+    color: var(--text-muted);
+    font-size: 0.6rem;
+}
+
+.car-option-card strong {
+    margin-top: 5px;
+    overflow-wrap: anywhere;
+    color: var(--primary-green);
+    font-size: 0.76rem;
+}
+
+.transport-fare-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.transport-fare-note i {
+    margin-top: 3px;
+    color: var(--accent-gold);
+}
+
 .matching-plan {
     position: relative;
     padding: 36px;
@@ -956,6 +1144,14 @@
 
     .journey-stop-grid {
         grid-template-columns: 1fr;
+    }
+
+    .mode-option-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mode-option-card:last-child {
+        grid-column: 1 / -1;
     }
 }
 
@@ -1083,6 +1279,25 @@
     .journey-panel,
     .matching-plan {
         padding: 25px 21px;
+    }
+
+    .mode-option-grid,
+    .car-option-card {
+        grid-template-columns: 1fr;
+    }
+
+    .mode-option-card:last-child {
+        grid-column: auto;
+    }
+
+    .mode-options-heading {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .mode-options-heading > span {
+        width: 100%;
+        margin-left: 25px;
     }
 
     .matching-plan h3 {

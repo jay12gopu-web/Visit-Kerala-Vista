@@ -4718,6 +4718,161 @@ p {
 
 .supporting-plan-card p { font-size: 0.78rem; }
 
+/* Homepage guide benefits and public-review preview */
+.home-guide-section {
+    padding: 68px 0;
+    border-top: 1px solid rgba(10, 50, 34, 0.08);
+    background: #ffffff;
+}
+
+.home-guide-grid,
+.home-review-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.home-guide-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.home-guide-card {
+    min-width: 0;
+    padding: 24px 21px;
+    border: 1px solid rgba(10, 50, 34, 0.12);
+    border-radius: 6px;
+    background: #fffdf8;
+    box-shadow: 0 10px 25px rgba(10, 50, 34, 0.05);
+}
+
+.home-guide-card > i {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    margin-bottom: 17px;
+    border-radius: 50%;
+    place-items: center;
+    color: var(--accent-gold);
+    background: rgba(197, 160, 89, 0.13);
+}
+
+.home-guide-card h3,
+.home-review-card strong {
+    color: var(--primary-green);
+}
+
+.home-guide-card h3 {
+    margin-bottom: 8px;
+    font-size: 1.05rem;
+}
+
+.home-guide-card p {
+    color: var(--muted-gray);
+    font-size: 0.72rem;
+    line-height: 1.65;
+}
+
+.home-reviews-section {
+    background: #ffffff;
+}
+
+.home-review-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.home-review-card {
+    display: flex;
+    min-width: 0;
+    min-height: 230px;
+    padding: 25px;
+    border: 1px solid rgba(10, 50, 34, 0.12);
+    border-radius: 6px;
+    flex-direction: column;
+    background: #fffdf8;
+    box-shadow: 0 10px 25px rgba(10, 50, 34, 0.05);
+}
+
+.home-review-rating {
+    color: var(--accent-gold);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.home-review-card blockquote {
+    margin: 17px 0 23px;
+    color: var(--dark-charcoal);
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.55;
+}
+
+.home-review-person {
+    display: flex;
+    margin-top: auto;
+    align-items: center;
+    gap: 11px;
+}
+
+.home-review-person > div,
+.home-review-person strong,
+.home-review-person span {
+    min-width: 0;
+}
+
+.home-review-person strong,
+.home-review-person span {
+    display: block;
+}
+
+.home-review-person strong {
+    font-size: 0.72rem;
+}
+
+.home-review-person div > span {
+    margin-top: 2px;
+    overflow-wrap: anywhere;
+    color: var(--muted-gray);
+    font-size: 0.61rem;
+}
+
+.home-reviews-action {
+    margin-top: 27px;
+    text-align: center;
+}
+
+.home-reviews-action .card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+}
+
+@media (max-width: 980px) {
+    .home-guide-grid,
+    .home-review-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .home-review-card:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 620px) {
+    .home-guide-section {
+        padding: 52px 0;
+    }
+
+    .home-guide-grid,
+    .home-review-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .home-review-card,
+    .home-review-card:last-child {
+        min-height: 0;
+        grid-column: auto;
+    }
+}
+
 .destination-filters {
     display: flex;
     flex-wrap: wrap;

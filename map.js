@@ -499,74 +499,141 @@
 
         return {
             available: true,
+            fromCode: fromAccess.airport,
+            toCode: toAccess.airport,
             fromAirport,
             toAirport,
+            airportDistance,
             requiresRoadTransfer: fromAccess.airportTransfer > 30 || toAccess.airportTransfer > 30,
             transferMinutes: fromAccess.airportTransfer + toAccess.airportTransfer
         };
     }
 
-    function recommendedMethod(fromId, toId, roadMinutes) {
-        if (roadMinutes < 180) {
-            return {
-                mode: 'Car',
-                icon: 'fa-car-side',
-                approximateMinutes: roadMinutes,
-                reason: 'Best for this short route and offers the most flexibility.'
-            };
-        }
+    function estimatedRailMinutes(roadMinutes, rail) {
+        return roundToQuarterHour(Math.max(75, roadMinutes * 0.72) + rail.transferMinutes);
+    }
 
+    function estimatedFlightMinutes(flight) {
+        const airborneMinutes = Math.max(60, Math.round(flight.airportDistance / 7.2));
+        return roundToQuarterHour(flight.transferMinutes + 150 + airborneMinutes);
+    }
+
+    function recommendedMethod(fromId, toId, roadMinutes) {
         const longRoute = roadMinutes > 300;
         const rail = practicalRailConnection(fromId, toId, longRoute);
-
-        if (!longRoute) {
-            if (rail.available) {
-                const approximateMinutes = roundToQuarterHour(Math.max(rail.transferMinutes + 90, roadMinutes * 0.85));
-                return {
-                    mode: 'Train',
-                    icon: 'fa-train',
-                    approximateMinutes,
-                    reason: rail.requiresRoadTransfer
-                        ? `Recommended for this medium-distance route. Use ${rail.fromStation} and ${rail.toStation}, with a local road transfer where required.`
-                        : 'Recommended for this medium-distance route to reduce long road travel.'
-                };
-            }
-            return {
-                mode: 'Car',
-                icon: 'fa-car-side',
-                approximateMinutes: roadMinutes,
-                reason: 'A practical railway connection is not available near both places, so a direct car is the more sensible option.'
-            };
-        }
-
         const flight = practicalFlightConnection(fromId, toId, roadMinutes, rail);
-        if (flight.available) {
-            const approximateMinutes = roundToQuarterHour(flight.transferMinutes + 210);
-            const transferNote = flight.requiresRoadTransfer ? ' A final road transfer is required.' : '';
-            return {
-                mode: 'Flight',
-                icon: 'fa-plane-departure',
-                approximateMinutes,
-                reason: `Recommended for this long-distance journey. Use ${flight.fromAirport.name} and ${flight.toAirport.name}.${transferNote} Check current flight availability and connection times.`
-            };
-        }
+        const remoteRoadRoute = [fromId, toId].every(id => {
+            const access = transportAccess[id];
+            return access && access.railTransfer >= 150 && access.airportTransfer >= 150;
+        });
 
-        if (rail.available) {
-            const approximateMinutes = roundToQuarterHour(Math.max(rail.transferMinutes + 90, roadMinutes * 0.85));
-            return {
-                mode: 'Train',
-                icon: 'fa-train',
-                approximateMinutes,
-                reason: `Train is more practical than flying for this route. Use ${rail.fromStation} and ${rail.toStation}, with a road transfer where required; check current services.`
-            };
-        }
+        let carScore = roadMinutes <= 150 ? 100
+            : roadMinutes <= 240 ? 84
+                : roadMinutes <= 360 ? 66
+                    : roadMinutes <= 480 ? 48
+                        : roadMinutes <= 720 ? 30 : 10;
+        if (remoteRoadRoute) carScore += 22;
 
-        return {
+        const candidates = [{
             mode: 'Car',
             icon: 'fa-car-side',
+            score: carScore,
             approximateMinutes: roadMinutes,
-            reason: 'No practical rail or airport connection avoids a major detour, so a car remains the workable fallback. Consider an overnight break for this long road journey.'
+            reason: roadMinutes <= 240
+                ? 'Best for this short or remote route and offers the most flexibility.'
+                : 'Road travel remains the most practical option because rail and airport transfers would add a major detour.'
+        }];
+
+        if (rail.available) {
+            const railMinutes = estimatedRailMinutes(roadMinutes, rail);
+            let railScore = 68 + Math.min(26, Math.max(0, roadMinutes - 180) / 12) - rail.transferMinutes / 20;
+            if (rail.transferMinutes <= 60) railScore += 10;
+            if (roadMinutes < 150) railScore -= 38;
+            candidates.push({
+                mode: 'Train',
+                icon: 'fa-train',
+                score: railScore,
+                approximateMinutes: railMinutes,
+                reason: rail.requiresRoadTransfer
+                    ? `Rail reduces sustained road travel. Use ${rail.fromStation} and ${rail.toStation}, with local road transfers at one or both ends.`
+                    : 'A practical rail connection offers better comfort than a long road journey without airport overhead.'
+            });
+        }
+
+        if (flight.available) {
+            const flightMinutes = estimatedFlightMinutes(flight);
+            const timeSaved = roadMinutes - flightMinutes;
+            let flightScore = 55 + timeSaved / 8 - flight.transferMinutes / 25;
+            if (roadMinutes >= 600) flightScore += 16;
+            if (timeSaved < 120) flightScore -= 35;
+            candidates.push({
+                mode: 'Flight',
+                icon: 'fa-plane-departure',
+                score: flightScore,
+                approximateMinutes: flightMinutes,
+                reason: `Flying meaningfully reduces this long journey. Use ${flight.fromAirport.name} and ${flight.toAirport.name}, with road transfers where required.`
+            });
+        }
+
+        const selected = candidates.sort((first, second) => second.score - first.score)[0];
+        return { ...selected, rail, flight };
+    }
+
+    const roundFare = (amount, step = 50) => Math.max(step, Math.round(amount / step) * step);
+    const formatRupees = amount => `₹${Number(amount).toLocaleString('en-IN')}`;
+
+    function flightOptionsFor(recommendation) {
+        const flight = recommendation.flight;
+        if (!flight?.available) return [];
+        const base = roundFare(2500 + flight.airportDistance * 2.5, 100);
+        const airMinutes = Math.max(60, Math.round(flight.airportDistance / 7.2));
+        const route = `${flight.fromCode} → ${flight.toCode}`;
+        return [
+            { name: 'Fastest Economy option', route, fare: `${formatRupees(base)}–${formatRupees(base + 1700)}`, stops: 'NON-STOP IF OPERATING', duration: formatDuration(airMinutes) },
+            { name: 'Shortest one-stop option', route, fare: `${formatRupees(base + 700)}–${formatRupees(base + 2700)}`, stops: '1 STOP', duration: formatDuration(airMinutes + 120) },
+            { name: 'Flexible Economy option', route, fare: `${formatRupees(base + 400)}–${formatRupees(base + 2400)}`, stops: '1 STOP', duration: formatDuration(airMinutes + 180) }
+        ];
+    }
+
+    function trainOptionsFor(recommendation, roadMinutes, roadDistance) {
+        const rail = recommendation.rail;
+        if (!rail?.available) return [];
+        const base = roundFare(450 + roadDistance * 0.82);
+        const railMinutes = estimatedRailMinutes(roadMinutes, rail);
+        const route = `${rail.fromStation} → ${rail.toStation}`;
+        const overnightSuitable = (roadMinutes >= 420 && rail.transferMinutes <= 90)
+            || (roadMinutes >= 600 && rail.transferMinutes <= 180)
+            || (roadMinutes >= 300 && rail.transferMinutes <= 60);
+        const common = { route, fare: `${formatRupees(base)}–${formatRupees(base + 350)}`, changes: 'DIRECT SERVICE PREFERRED' };
+        const options = [
+            { ...common, name: 'Fastest practical 3AC option', duration: formatDuration(railMinutes), timing: 'DAY TRAIN' },
+            { ...common, name: 'Comfort-focused 3AC option', fare: `${formatRupees(base + 100)}–${formatRupees(base + 500)}`, duration: formatDuration(railMinutes + 30), timing: 'DAY TRAIN' }
+        ];
+        options.push(overnightSuitable
+            ? { ...common, name: 'Overnight 3AC option', fare: `${formatRupees(base + 50)}–${formatRupees(base + 450)}`, duration: formatDuration(railMinutes + 45), timing: 'NIGHT TRAIN' }
+            : { ...common, name: 'Flexible 3AC option', fare: `${formatRupees(base)}–${formatRupees(base + 450)}`, duration: formatDuration(railMinutes + 60), timing: 'DAY TRAIN' });
+        return options;
+    }
+
+    function modeUnavailable(mode, reason) {
+        const explanations = {
+            Train: reason === 'access' ? 'No practical railway access near both places.' : 'Rail would add an unreasonable transfer for this route.',
+            Flight: reason === 'same-airport-region' ? 'Both places use the same practical airport region.'
+                : reason === 'airports-too-close' ? 'Airport overhead is greater than the time saved.'
+                    : reason === 'rail-more-direct' ? 'A direct rail journey is more practical than flying.'
+                        : 'No practical airport connection reduces the journey.'
         };
+        return `<div class="transport-unavailable"><strong>${escapeHtml(mode)}</strong><span>Not practical for this route</span><small>${escapeHtml(explanations[mode] || '')}</small></div>`;
+    }
+
+    function renderTransportComparison(fromId, toId, route, recommendation, stops) {
+        const flights = flightOptionsFor(recommendation);
+        const trains = trainOptionsFor(recommendation, route.minutes, route.distance);
+        const stopNames = stops.slice(0, 3).map(stop => stop.name).join(' · ') || 'Comfort breaks as needed';
+        const flightMarkup = flights.length ? flights.map((option, index) => `<article class="mode-option-card"><span class="mode-option-number">Flight ${index + 1}</span><h5>${escapeHtml(option.name)}</h5><p class="mode-route">${escapeHtml(option.route)}</p><strong>${escapeHtml(option.fare)}</strong><small>Estimated Economy fare / person</small><div class="mode-option-meta"><span>${escapeHtml(option.stops)}</span><span>Approx. ${escapeHtml(option.duration)}</span></div></article>`).join('') : modeUnavailable('Flight', recommendation.flight?.reason);
+        const trainMarkup = trains.length ? trains.map((option, index) => `<article class="mode-option-card"><span class="mode-option-number">Train ${index + 1}</span><h5>${escapeHtml(option.name)}</h5><p class="mode-route">${escapeHtml(option.route)}</p><strong>${escapeHtml(option.fare)}</strong><small>Estimated 3AC fare / person</small><div class="mode-option-meta"><span>${escapeHtml(option.changes)}</span><span>Approx. ${escapeHtml(option.duration)}</span><span>${escapeHtml(option.timing)}</span></div></article>`).join('') : modeUnavailable('Train', 'access');
+
+        elements.transport.innerHTML = `<div class="recommended-mode"><span>Recommended</span><strong><i class="fa-solid ${escapeHtml(recommendation.icon)}" aria-hidden="true"></i> ${escapeHtml(recommendation.mode)}</strong><p>Approximate total travel time: ${escapeHtml(formatDuration(recommendation.approximateMinutes))}. ${escapeHtml(recommendation.reason)}</p></div><section class="mode-options-group" aria-labelledby="flight-options-heading"><div class="mode-options-heading"><i class="fa-solid fa-plane-departure" aria-hidden="true"></i><h4 id="flight-options-heading">Flights</h4><span>Economy fare estimate</span></div><div class="mode-option-grid">${flightMarkup}</div></section><section class="mode-options-group" aria-labelledby="train-options-heading"><div class="mode-options-heading"><i class="fa-solid fa-train" aria-hidden="true"></i><h4 id="train-options-heading">Trains</h4><span>3AC fare estimate</span></div><div class="mode-option-grid">${trainMarkup}</div></section><section class="mode-options-group" aria-labelledby="car-options-heading"><div class="mode-options-heading"><i class="fa-solid fa-car-side" aria-hidden="true"></i><h4 id="car-options-heading">Car</h4></div><article class="car-option-card"><div><span>Road distance</span><strong>${escapeHtml(`${route.distance} km`)}</strong></div><div><span>Drive time</span><strong>${escapeHtml(formatDuration(route.minutes))}</strong></div><div><span>Recommended stops</span><strong>${escapeHtml(stopNames)}</strong></div></article></section><p class="transport-fare-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Fares and schedules are estimates and may vary. Verify current availability before travel.</p>`;
     }
 
     function routeStops(fallback, fromId, toId) {
@@ -617,9 +684,31 @@
         return `Travel ${direction} from ${from.name} to ${to.name} on an approximate ${type.toLowerCase()}. ${experiences[type]}${via}`;
     }
 
-    function travelAdvice(fromId, toId, type, distance, minutes) {
+    function travelAdvice(fromId, toId, type, distance, minutes, recommendation) {
         const advice = [];
         const pair = [destinations[fromId], destinations[toId]];
+
+        if (recommendation.mode === 'Flight') {
+            const flight = recommendation.flight;
+            advice.push(['fa-ticket', 'Check current flight operation, Economy baggage rules and terminal details before booking.']);
+            advice.push(['fa-clock', 'Allow enough time for airport check-in, security and the road transfer at each end of the journey.']);
+            if (flight?.requiresRoadTransfer) advice.push(['fa-car-side', 'Pre-arrange the final road transfer because the selected destinations are not both beside their practical airports.']);
+            advice.push(['fa-cloud-rain', 'Monsoon weather can affect road access and flight operations, so keep a generous connection buffer.']);
+            advice.push(['fa-suitcase-medical', 'Keep medicines, identification and essential items in cabin baggage rather than checked luggage.']);
+            advice.push(['fa-person-walking-luggage', 'Families and senior travellers should request airport assistance directly from the airline when needed.']);
+            return advice.slice(0, 6);
+        }
+
+        if (recommendation.mode === 'Train') {
+            const rail = recommendation.rail;
+            advice.push(['fa-ticket', 'Check the current timetable and confirmed 3AC availability before finalising the journey.']);
+            advice.push(['fa-clock', 'Reach the departure station 30-45 minutes early and confirm the platform using official station information.']);
+            if (rail?.requiresRoadTransfer) advice.push(['fa-car-side', 'Plan the local road transfer to and from the railway station, including extra time for traffic.']);
+            advice.push(['fa-moon', 'For an overnight service, keep valuables secure and choose a train whose arrival time suits the final transfer.']);
+            advice.push(['fa-bottle-water', 'Carry drinking water and light food even when onboard catering may be available.']);
+            advice.push(['fa-cloud-rain', 'During the monsoon, check current rail and local road advisories before departure.']);
+            return advice.slice(0, 6);
+        }
 
         if (type === 'Hill road') {
             advice.push(['fa-road', 'Hill roads can be narrow and winding. Use an experienced driver and avoid rushing after dark.']);
@@ -640,34 +729,6 @@
         advice.push(['fa-cloud-rain', 'During the monsoon, check current weather and local advisories before departure and allow a larger time buffer.']);
         advice.push(['fa-people-roof', minutes > 240 ? 'This is a demanding same-day transfer for families and senior travellers; consider an overnight break.' : 'The route is generally manageable for families when comfort breaks and meal stops are planned.']);
         return advice.slice(0, 6);
-    }
-
-    function transportOptions(fromId, toId, type, distance, recommendation) {
-        const from = destinations[fromId];
-        const to = destinations[toId];
-        const options = [[
-            recommendation.icon,
-            `${recommendation.mode} recommended`,
-            `Approximate total travel time: ${formatDuration(recommendation.approximateMinutes)}. ${recommendation.reason}`
-        ]];
-
-        if (recommendation.mode !== 'Car') {
-            options.push(['fa-car-side', 'Private car or taxi', type === 'Hill road' ? 'Useful for the final hill-road transfer, viewpoints and flexible comfort stops.' : 'Useful for direct hotel transfers and intermediate stops, but not the primary recommendation for this journey length.']);
-        }
-
-        options.push(['fa-bus-simple', 'Bus', 'Public and private buses serve many Kerala towns; check current operator timings and change points before travel.']);
-
-        if (recommendation.mode !== 'Train' && from.rail && to.rail && type !== 'Hill road') {
-            options.push(['fa-train', 'Train', 'Practical for many coastal and city connections, followed by a local taxi or bus at the destination.']);
-        } else if (recommendation.mode !== 'Train' && (from.rail || to.rail) && distance >= 100) {
-            options.push(['fa-train', 'Train plus road transfer', 'A rail segment may reduce road time, but hill and island destinations still need a final taxi or bus connection.']);
-        }
-
-        if (type === 'Backwater connection' || [fromId, toId].some(id => ['fort-kochi', 'kadamakkudy', 'alappuzha', 'kumarakom', 'munroe-island', 'valiyaparamba'].includes(id))) {
-            options.push(['fa-sailboat', 'Boat or ferry', 'Useful for selected local sightseeing or short connections; verify current operating conditions locally.']);
-        }
-
-        return options.slice(0, 4);
     }
 
     function matchingPlan(fromId, toId) {
@@ -822,6 +883,7 @@
         elements.summaryDistance.textContent = `${route.distance} km`;
         elements.summaryTime.textContent = formatDuration(route.minutes);
         elements.summaryMethod.textContent = recommendation.mode;
+        elements.summaryMethodIcon.className = `fa-solid ${recommendation.icon}`;
         elements.summaryType.textContent = type;
         elements.journeyHeading.textContent = `${from.name} to ${to.name}`;
         elements.overview.textContent = journeyOverview(fromId, toId, type, fallback);
@@ -829,9 +891,13 @@
             ? '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Road geometry via OSRM'
             : '<i class="fa-solid fa-shield" aria-hidden="true"></i> Curated fallback route';
 
-        renderStops(stops);
-        renderList(elements.advice, travelAdvice(fromId, toId, type, route.distance, route.minutes));
-        renderList(elements.transport, transportOptions(fromId, toId, type, route.distance, recommendation), true);
+        const showRoadStops = recommendation.mode === 'Car';
+        elements.stopsPanel.hidden = !showRoadStops;
+        if (showRoadStops) renderStops(stops);
+        else elements.stops.innerHTML = '';
+        elements.adviceTitle.textContent = `${recommendation.mode} Travel Advice`;
+        renderList(elements.advice, travelAdvice(fromId, toId, type, route.distance, route.minutes, recommendation));
+        renderTransportComparison(fromId, toId, route, recommendation, stops);
 
         elements.planTitle.textContent = plan.name;
         elements.planDuration.textContent = plan.duration;
@@ -910,10 +976,13 @@
             summaryDistance: document.getElementById('summary-distance'),
             summaryTime: document.getElementById('summary-time'),
             summaryMethod: document.getElementById('summary-method'),
+            summaryMethodIcon: document.getElementById('summary-method-icon'),
             summaryType: document.getElementById('summary-type'),
             journeyHeading: document.getElementById('journey-heading'),
             overview: document.getElementById('journey-overview'),
+            stopsPanel: document.getElementById('journey-stops-panel'),
             stops: document.getElementById('journey-stops'),
+            adviceTitle: document.getElementById('journey-advice-title'),
             advice: document.getElementById('journey-advice'),
             transport: document.getElementById('journey-transport'),
             planTitle: document.getElementById('matching-plan-title'),
@@ -1020,6 +1089,17 @@
             findDestinationId,
             shortestFallbackRoute,
             recommendedMethod,
+            transportForRoute(fromId, toId) {
+                const route = shortestFallbackRoute(fromId, toId);
+                if (!route) return null;
+                const recommendation = recommendedMethod(fromId, toId, route.minutes);
+                return {
+                    recommendation,
+                    flights: flightOptionsFor(recommendation),
+                    trains: trainOptionsFor(recommendation, route.minutes, route.distance),
+                    car: { distance: route.distance, minutes: route.minutes }
+                };
+            },
             setFallbackMode(enabled) { forceFallbackRouting = Boolean(enabled); }
         };
         void initialiseFromQuery();
