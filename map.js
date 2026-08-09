@@ -215,6 +215,33 @@
         }
     };
 
+    const airports = {
+        COK: { name: 'Cochin International Airport', coordinates: [10.1520, 76.4019] },
+        TRV: { name: 'Thiruvananthapuram International Airport', coordinates: [8.4821, 76.9201] },
+        CCJ: { name: 'Calicut International Airport', coordinates: [11.1368, 75.9553] },
+        CNN: { name: 'Kannur International Airport', coordinates: [11.9186, 75.5472] }
+    };
+
+    const transportAccess = {
+        kochi: { rail: 'Ernakulam', railTransfer: 20, airport: 'COK', airportTransfer: 45 },
+        'fort-kochi': { rail: 'Ernakulam', railTransfer: 50, airport: 'COK', airportTransfer: 75 },
+        kadamakkudy: { rail: 'Ernakulam or Aluva', railTransfer: 60, airport: 'COK', airportTransfer: 50 },
+        munnar: { rail: 'Aluva or Ernakulam', railTransfer: 240, airport: 'COK', airportTransfer: 240 },
+        thekkady: { rail: 'Kottayam', railTransfer: 180, airport: 'COK', airportTransfer: 270 },
+        alappuzha: { rail: 'Alappuzha', railTransfer: 15, airport: 'COK', airportTransfer: 100 },
+        kumarakom: { rail: 'Kottayam', railTransfer: 35, airport: 'COK', airportTransfer: 110 },
+        'munroe-island': { rail: 'Munroturuttu', railTransfer: 15, airport: 'TRV', airportTransfer: 120 },
+        varkala: { rail: 'Varkala Sivagiri', railTransfer: 15, airport: 'TRV', airportTransfer: 75 },
+        kovalam: { rail: 'Thiruvananthapuram Central', railTransfer: 35, airport: 'TRV', airportTransfer: 30 },
+        poovar: { rail: 'Neyyattinkara or Thiruvananthapuram', railTransfer: 45, airport: 'TRV', airportTransfer: 45 },
+        thiruvananthapuram: { rail: 'Thiruvananthapuram Central', railTransfer: 15, airport: 'TRV', airportTransfer: 20 },
+        wayanad: { rail: 'Kozhikode', railTransfer: 150, airport: 'CCJ', airportTransfer: 180 },
+        kozhikode: { rail: 'Kozhikode', railTransfer: 15, airport: 'CCJ', airportTransfer: 45 },
+        kannur: { rail: 'Kannur', railTransfer: 15, airport: 'CNN', airportTransfer: 45 },
+        valiyaparamba: { rail: 'Payyanur', railTransfer: 45, airport: 'CNN', airportTransfer: 90 },
+        bekal: { rail: 'Bekal Fort or Kasaragod', railTransfer: 20, airport: 'CNN', airportTransfer: 150 }
+    };
+
     const stopLibrary = {
         mattancherry: { name: 'Mattancherry', description: 'A historic trading quarter beside Fort Kochi.', why: 'Spice streets, heritage buildings and Jew Town fit naturally before the waterfront.', duration: '45-90 min' },
         vypin: { name: 'Vypin waterfront', description: 'A harbour-side island connection near old Kochi.', why: 'A useful pause for ferry views and a different perspective on the port.', duration: '30-45 min' },
@@ -432,13 +459,114 @@
         return 'City route';
     }
 
-    function recommendedMethod(fromId, toId, routeType, distance) {
-        const pair = [destinations[fromId], destinations[toId]];
-        if (routeType === 'Hill road') return 'Private car or taxi';
-        if (routeType === 'Backwater connection') return pair.some(destination => destination.categoryKey === 'water') ? 'Car plus local boat' : 'Private car or taxi';
-        if (distance >= 80 && pair.every(destination => destination.rail)) return 'Train or private car';
-        if (routeType === 'Coastal road' && distance >= 70) return 'Train or private car';
-        return 'Private car or taxi';
+    function distanceBetweenCoordinates(first, second) {
+        const toRadians = degrees => degrees * Math.PI / 180;
+        const latitudeDelta = toRadians(second[0] - first[0]);
+        const longitudeDelta = toRadians(second[1] - first[1]);
+        const firstLatitude = toRadians(first[0]);
+        const secondLatitude = toRadians(second[0]);
+        const haversine = Math.sin(latitudeDelta / 2) ** 2
+            + Math.cos(firstLatitude) * Math.cos(secondLatitude) * Math.sin(longitudeDelta / 2) ** 2;
+        return 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+    }
+
+    function practicalRailConnection(fromId, toId, longRoute) {
+        const from = transportAccess[fromId];
+        const to = transportAccess[toId];
+        const maximumTransfer = longRoute ? 180 : 90;
+        const available = Boolean(from?.rail && to?.rail
+            && from.railTransfer <= maximumTransfer
+            && to.railTransfer <= maximumTransfer);
+        return {
+            available,
+            requiresRoadTransfer: available && (from.railTransfer > 30 || to.railTransfer > 30),
+            fromStation: from?.rail,
+            toStation: to?.rail,
+            transferMinutes: (from?.railTransfer || 0) + (to?.railTransfer || 0)
+        };
+    }
+
+    function practicalFlightConnection(fromId, toId, roadMinutes, rail) {
+        const fromAccess = transportAccess[fromId];
+        const toAccess = transportAccess[toId];
+        const fromAirport = airports[fromAccess?.airport];
+        const toAirport = airports[toAccess?.airport];
+        if (!fromAirport || !toAirport || fromAccess.airport === toAccess.airport) return { available: false, reason: 'same-airport-region' };
+
+        const airportDistance = distanceBetweenCoordinates(fromAirport.coordinates, toAirport.coordinates);
+        if (airportDistance < 160) return { available: false, reason: 'airports-too-close' };
+        if (rail.available && roadMinutes <= 450) return { available: false, reason: 'rail-more-direct' };
+
+        return {
+            available: true,
+            fromAirport,
+            toAirport,
+            requiresRoadTransfer: fromAccess.airportTransfer > 30 || toAccess.airportTransfer > 30,
+            transferMinutes: fromAccess.airportTransfer + toAccess.airportTransfer
+        };
+    }
+
+    function recommendedMethod(fromId, toId, roadMinutes) {
+        if (roadMinutes < 180) {
+            return {
+                mode: 'Car',
+                icon: 'fa-car-side',
+                approximateMinutes: roadMinutes,
+                reason: 'Best for this short route and offers the most flexibility.'
+            };
+        }
+
+        const longRoute = roadMinutes > 300;
+        const rail = practicalRailConnection(fromId, toId, longRoute);
+
+        if (!longRoute) {
+            if (rail.available) {
+                const approximateMinutes = roundToQuarterHour(Math.max(rail.transferMinutes + 90, roadMinutes * 0.85));
+                return {
+                    mode: 'Train',
+                    icon: 'fa-train',
+                    approximateMinutes,
+                    reason: rail.requiresRoadTransfer
+                        ? `Recommended for this medium-distance route. Use ${rail.fromStation} and ${rail.toStation}, with a local road transfer where required.`
+                        : 'Recommended for this medium-distance route to reduce long road travel.'
+                };
+            }
+            return {
+                mode: 'Car',
+                icon: 'fa-car-side',
+                approximateMinutes: roadMinutes,
+                reason: 'A practical railway connection is not available near both places, so a direct car is the more sensible option.'
+            };
+        }
+
+        const flight = practicalFlightConnection(fromId, toId, roadMinutes, rail);
+        if (flight.available) {
+            const approximateMinutes = roundToQuarterHour(flight.transferMinutes + 210);
+            const transferNote = flight.requiresRoadTransfer ? ' A final road transfer is required.' : '';
+            return {
+                mode: 'Flight',
+                icon: 'fa-plane-departure',
+                approximateMinutes,
+                reason: `Recommended for this long-distance journey. Use ${flight.fromAirport.name} and ${flight.toAirport.name}.${transferNote} Check current flight availability and connection times.`
+            };
+        }
+
+        if (rail.available) {
+            const approximateMinutes = roundToQuarterHour(Math.max(rail.transferMinutes + 90, roadMinutes * 0.85));
+            return {
+                mode: 'Train',
+                icon: 'fa-train',
+                approximateMinutes,
+                reason: `Train is more practical than flying for this route. Use ${rail.fromStation} and ${rail.toStation}, with a road transfer where required; check current services.`
+            };
+        }
+
+        return {
+            mode: 'Car',
+            icon: 'fa-car-side',
+            approximateMinutes: roadMinutes,
+            reason: 'No practical rail or airport connection avoids a major detour, so a car remains the workable fallback. Consider an overnight break for this long road journey.'
+        };
     }
 
     function routeStops(fallback, fromId, toId) {
@@ -514,17 +642,24 @@
         return advice.slice(0, 6);
     }
 
-    function transportOptions(fromId, toId, type, distance) {
+    function transportOptions(fromId, toId, type, distance, recommendation) {
         const from = destinations[fromId];
         const to = destinations[toId];
-        const options = [
-            ['fa-car-side', 'Private car or taxi', type === 'Hill road' ? 'The most flexible option for viewpoints, comfort stops and winding-road pacing.' : 'The simplest option for luggage, intermediate stops and direct hotel transfers.'],
-            ['fa-bus-simple', 'Bus', 'Public and private buses serve many Kerala towns; check current operator timings and change points before travel.']
-        ];
+        const options = [[
+            recommendation.icon,
+            `${recommendation.mode} recommended`,
+            `Approximate total travel time: ${formatDuration(recommendation.approximateMinutes)}. ${recommendation.reason}`
+        ]];
 
-        if (from.rail && to.rail && type !== 'Hill road') {
+        if (recommendation.mode !== 'Car') {
+            options.push(['fa-car-side', 'Private car or taxi', type === 'Hill road' ? 'Useful for the final hill-road transfer, viewpoints and flexible comfort stops.' : 'Useful for direct hotel transfers and intermediate stops, but not the primary recommendation for this journey length.']);
+        }
+
+        options.push(['fa-bus-simple', 'Bus', 'Public and private buses serve many Kerala towns; check current operator timings and change points before travel.']);
+
+        if (recommendation.mode !== 'Train' && from.rail && to.rail && type !== 'Hill road') {
             options.push(['fa-train', 'Train', 'Practical for many coastal and city connections, followed by a local taxi or bus at the destination.']);
-        } else if ((from.rail || to.rail) && distance >= 100) {
+        } else if (recommendation.mode !== 'Train' && (from.rail || to.rail) && distance >= 100) {
             options.push(['fa-train', 'Train plus road transfer', 'A rail segment may reduce road time, but hill and island destinations still need a final taxi or bus connection.']);
         }
 
@@ -678,7 +813,7 @@
         const from = destinations[fromId];
         const to = destinations[toId];
         const type = routeTypeFor(fromId, toId);
-        const method = recommendedMethod(fromId, toId, type, route.distance);
+        const recommendation = recommendedMethod(fromId, toId, route.minutes);
         const plan = matchingPlan(fromId, toId);
         const stops = routeStops(fallback, fromId, toId);
 
@@ -686,7 +821,7 @@
         elements.summaryTo.textContent = to.name;
         elements.summaryDistance.textContent = `${route.distance} km`;
         elements.summaryTime.textContent = formatDuration(route.minutes);
-        elements.summaryMethod.textContent = method;
+        elements.summaryMethod.textContent = recommendation.mode;
         elements.summaryType.textContent = type;
         elements.journeyHeading.textContent = `${from.name} to ${to.name}`;
         elements.overview.textContent = journeyOverview(fromId, toId, type, fallback);
@@ -696,7 +831,7 @@
 
         renderStops(stops);
         renderList(elements.advice, travelAdvice(fromId, toId, type, route.distance, route.minutes));
-        renderList(elements.transport, transportOptions(fromId, toId, type, route.distance), true);
+        renderList(elements.transport, transportOptions(fromId, toId, type, route.distance, recommendation), true);
 
         elements.planTitle.textContent = plan.name;
         elements.planDuration.textContent = plan.duration;
@@ -711,7 +846,7 @@
         elements.results.classList.remove('is-appearing');
         window.requestAnimationFrame(() => elements.results.classList.add('is-appearing'));
 
-        return { from: from.name, to: to.name, distance: route.distance, minutes: route.minutes, type, method, plan: plan.name, url: plan.url, source: route.source };
+        return { from: from.name, to: to.name, distance: route.distance, minutes: route.minutes, type, method: recommendation.mode, recommendation, plan: plan.name, url: plan.url, source: route.source };
     }
 
     async function showRoute(fromId, toId, options = {}) {
@@ -884,6 +1019,7 @@
             clearRoute,
             findDestinationId,
             shortestFallbackRoute,
+            recommendedMethod,
             setFallbackMode(enabled) { forceFallbackRouting = Boolean(enabled); }
         };
         void initialiseFromQuery();
