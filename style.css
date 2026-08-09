@@ -4725,8 +4725,7 @@ p {
     background: #ffffff;
 }
 
-.home-guide-grid,
-.home-review-grid {
+.home-guide-grid {
     display: grid;
     gap: 16px;
 }
@@ -4775,12 +4774,23 @@ p {
     background: #ffffff;
 }
 
-.home-review-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+.home-review-carousel {
+    position: relative;
+}
+
+.home-review-viewport {
+    overflow: hidden;
+}
+
+.home-review-track {
+    display: flex;
+    gap: 16px;
+    transition: transform 0.45s ease;
 }
 
 .home-review-card {
     display: flex;
+    flex: 0 0 calc((100% - 32px) / 3);
     min-width: 0;
     min-height: 230px;
     padding: 25px;
@@ -4845,14 +4855,53 @@ p {
     gap: 9px;
 }
 
+.home-review-controls {
+    display: flex;
+    margin-top: 20px;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+.home-review-controls button {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid rgba(10, 50, 34, 0.2);
+    border-radius: 50%;
+    place-items: center;
+    color: var(--primary-green);
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.home-review-controls button:hover,
+.home-review-controls button:focus-visible {
+    color: #ffffff;
+    border-color: var(--primary-green);
+    background: var(--primary-green);
+}
+
+.home-review-controls button:focus-visible {
+    outline: 3px solid rgba(197, 160, 89, 0.42);
+    outline-offset: 3px;
+}
+
+.home-review-controls span {
+    min-width: 104px;
+    color: var(--muted-gray);
+    font-size: 0.65rem;
+    text-align: center;
+}
+
 @media (max-width: 980px) {
-    .home-guide-grid,
-    .home-review-grid {
+    .home-guide-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .home-review-card:last-child {
-        grid-column: 1 / -1;
+    .home-review-card {
+        flex-basis: calc((100% - 16px) / 2);
     }
 }
 
@@ -4861,15 +4910,19 @@ p {
         padding: 52px 0;
     }
 
-    .home-guide-grid,
-    .home-review-grid {
+    .home-guide-grid {
         grid-template-columns: 1fr;
     }
 
-    .home-review-card,
-    .home-review-card:last-child {
+    .home-review-card {
+        flex-basis: 100%;
         min-height: 0;
-        grid-column: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-review-track {
+        transition: none;
     }
 }
 

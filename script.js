@@ -1951,6 +1951,72 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    const carousel = document.querySelector('[data-home-review-carousel]');
+    if (!carousel) return;
+
+    const track = carousel.querySelector('.home-review-track');
+    const cards = [...carousel.querySelectorAll('.home-review-card')];
+    const previous = carousel.querySelector('[data-review-previous]');
+    const next = carousel.querySelector('[data-review-next]');
+    const status = carousel.querySelector('[data-review-status]');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let currentIndex = 0;
+    let timer = null;
+
+    const visibleCount = () => window.innerWidth <= 620 ? 1 : window.innerWidth <= 980 ? 2 : 3;
+    const maximumIndex = () => Math.max(0, cards.length - visibleCount());
+
+    const updateCarousel = () => {
+        currentIndex = Math.min(currentIndex, maximumIndex());
+        const offset = cards[currentIndex]?.offsetLeft || 0;
+        track.style.transform = `translateX(-${offset}px)`;
+        const visible = visibleCount();
+        cards.forEach((card, index) => card.setAttribute('aria-hidden', String(index < currentIndex || index >= currentIndex + visible)));
+        status.textContent = `Reviews ${currentIndex + 1}-${Math.min(cards.length, currentIndex + visible)} of ${cards.length}`;
+    };
+
+    const showNext = () => {
+        currentIndex = currentIndex >= maximumIndex() ? 0 : currentIndex + 1;
+        updateCarousel();
+    };
+
+    const showPrevious = () => {
+        currentIndex = currentIndex <= 0 ? maximumIndex() : currentIndex - 1;
+        updateCarousel();
+    };
+
+    const stopAutomaticSlide = () => {
+        window.clearInterval(timer);
+        timer = null;
+    };
+
+    const startAutomaticSlide = () => {
+        stopAutomaticSlide();
+        if (!reducedMotion.matches) timer = window.setInterval(showNext, 5500);
+    };
+
+    previous.addEventListener('click', () => {
+        showPrevious();
+        startAutomaticSlide();
+    });
+    next.addEventListener('click', () => {
+        showNext();
+        startAutomaticSlide();
+    });
+    carousel.addEventListener('mouseenter', stopAutomaticSlide);
+    carousel.addEventListener('mouseleave', startAutomaticSlide);
+    carousel.addEventListener('focusin', stopAutomaticSlide);
+    carousel.addEventListener('focusout', event => {
+        if (!carousel.contains(event.relatedTarget)) startAutomaticSlide();
+    });
+    window.addEventListener('resize', updateCarousel);
+    reducedMotion.addEventListener?.('change', startAutomaticSlide);
+
+    updateCarousel();
+    startAutomaticSlide();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
     const finder = document.querySelector('[data-trip-finder]');
     if (!finder) return;
 
