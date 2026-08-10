@@ -1159,10 +1159,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 7. Floating Kerala Travel Assistant
     // ==========================================
-    const loadAssistantEngine = () => {
+    const loadAssistantScript = () => {
         if (window.KeralaAssistantEngine || document.querySelector('[data-kerala-assistant-engine]')) return;
         const assistantEngineScript = document.createElement('script');
-        assistantEngineScript.src = 'kerala-assistant.js?v=20260810-routeqa1';
+        assistantEngineScript.src = 'kerala-assistant.js?v=20260810-planqa1';
         assistantEngineScript.dataset.keralaAssistantEngine = 'true';
         assistantEngineScript.addEventListener('error', () => {
             console.error('The local Kerala Travel Guide could not be loaded.');
@@ -1170,10 +1170,24 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.append(assistantEngineScript);
     };
 
+    const loadAssistantEngine = () => {
+        if (window.KeralaPlanData) {
+            loadAssistantScript();
+            return;
+        }
+        if (document.querySelector('[data-kerala-plan-data]')) return;
+        const planDataScript = document.createElement('script');
+        planDataScript.src = 'kerala-plan-data.js?v=20260810-planqa1';
+        planDataScript.dataset.keralaPlanData = 'true';
+        planDataScript.addEventListener('load', loadAssistantScript, { once: true });
+        planDataScript.addEventListener('error', () => console.error('The Kerala itinerary data could not be loaded.'));
+        document.body.append(planDataScript);
+    };
+
     if (window.KeralaRouteCore) loadAssistantEngine();
     else {
         const routeCoreScript = document.createElement('script');
-        routeCoreScript.src = 'route-planner-core.js?v=20260810-routeqa1';
+        routeCoreScript.src = 'route-planner-core.js?v=20260810-planqa1';
         routeCoreScript.dataset.keralaRouteCore = 'true';
         routeCoreScript.addEventListener('load', loadAssistantEngine, { once: true });
         routeCoreScript.addEventListener('error', () => console.error('The shared Kerala route planner could not be loaded.'));

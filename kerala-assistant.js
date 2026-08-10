@@ -3,6 +3,7 @@
 
     const root = typeof window !== 'undefined' ? window : globalThis;
     const ROUTE_CORE = root.KeralaRouteCore || (typeof module === 'object' && module.exports ? require('./route-planner-core.js') : null);
+    const PLAN_DATA = root.KeralaPlanData || (typeof module === 'object' && module.exports ? require('./kerala-plan-data.js') : null);
 
     const DESTINATIONS = {
         kochi: {
@@ -207,14 +208,7 @@
         }
     };
 
-    const PLANS = [
-        { id: 'three-day', name: '3-Day Kochi + Backwaters', days: 3, page: 'plan-3-days.html', route: ['kochi', 'alappuzha'], pace: 'relaxed', interests: ['culture', 'backwaters', 'houseboat'], audiences: ['family', 'couple', 'solo', 'senior'], driveLoad: 'light' },
-        { id: 'five-day', name: '5-Day Hills + Houseboat', days: 5, page: 'plan-5-days.html', route: ['kochi', 'munnar', 'thekkady', 'alappuzha'], pace: 'balanced', interests: ['culture', 'hills', 'wildlife', 'backwaters', 'houseboat'], audiences: ['family', 'couple', 'solo'], driveLoad: 'moderate' },
-        { id: 'seven-day', name: '7-Day Classic + Offbeat Kerala', days: 7, page: 'plan-7-days.html', route: ['kochi', 'kadamakkudy', 'munnar', 'thekkady', 'munroe-island', 'varkala'], pace: 'balanced', interests: ['culture', 'hills', 'wildlife', 'backwaters', 'offbeat', 'beaches'], audiences: ['family', 'couple', 'solo', 'students'], driveLoad: 'moderate' },
-        { id: 'ten-day', name: '10-Day Kerala Deep Dive', days: 10, page: 'plan-10-days.html', route: ['kochi', 'kadamakkudy', 'munroe-island', 'munnar', 'thekkady', 'wayanad', 'valiyaparamba', 'bekal'], pace: 'active', interests: ['culture', 'hills', 'wildlife', 'backwaters', 'offbeat', 'beaches'], audiences: ['family', 'couple', 'solo', 'students'], driveLoad: 'high' },
-        { id: 'student', name: '5-Day Kerala Student Plan', days: 5, page: 'plan-5-days-students.html', route: ['kochi', 'munnar', 'alappuzha'], pace: 'active', interests: ['culture', 'hills', 'backwaters', 'food'], audiences: ['students'], driveLoad: 'moderate' },
-        { id: 'senior', name: '5-Day Easy-Paced Senior Plan', days: 5, page: 'plan-5-days-seniors.html', route: ['kochi', 'kumarakom'], pace: 'relaxed', interests: ['culture', 'backwaters', 'wellness'], audiences: ['senior', 'couple'], driveLoad: 'light' }
-    ];
+    const PLANS = PLAN_DATA?.plans || [];
 
     const PHRASES = {
         hello: { triggers: ['hello', 'greeting', 'namaskaram'], english: 'Hello / Greetings', malayalam: 'നമസ്കാരം', transliteration: 'Namaskaram', audio: 'audio/malayalam/namaskaram.mp3' },
@@ -260,7 +254,7 @@
         language: /\b(malayalam|how do i say|how to say|phrase|pronounce|translation|say hello|say thank)\b/,
         weather: /\b(weather|season|monsoon|rain|raining|climate|december|january|february|march|april|may|june|july|august|september|october|november)\b/,
         safety: /\b(safe|safety|danger|kids safe|senior safe|sea condition|life jacket|emergency|alone at night)\b/,
-        plan: /\b(plan|trip|itinerary|route|recommend|where should|days|day trip|add|remove|skip|change that|dont want|do not want)\b/
+        plan: /\b(plan|plans|trip|itinerary|itineraries|vacation plan|package|recommend|where should|days|day trip|add|remove|skip|change that|dont want|do not want|what happens on day|which day|last day|hotel changes|overnight bases?)\b/
     };
 
     const INTEREST_PATTERNS = {
@@ -301,9 +295,12 @@
         .trim();
 
     const freshContext = () => ({
-        version: 4,
+        version: 5,
         destinations: [],
         activeRoute: [],
+        routeSource: null,
+        activePlanId: null,
+        basePlanId: null,
         currentDestination: null,
         duration: null,
         travellerType: null,
@@ -321,10 +318,14 @@
         accommodationPreference: null,
         previousTopic: null,
         previousComparison: [],
+        previousPlanComparison: [],
+        planComparisonWinner: null,
         comparisonWinner: null,
         lastComparisonReason: null,
         lastIntent: null,
         lastPlanId: null,
+        studentAgeGroup: null,
+        pendingPlanDestination: null,
         turnCount: 0
     });
 
@@ -334,7 +335,14 @@
         clean.activeRoute = Array.isArray(clean.activeRoute) ? [...new Set(clean.activeRoute.filter(id => ROUTE_CORE?.destinations?.[id]))].slice(0, 8) : [];
         clean.interests = Array.isArray(clean.interests) ? [...new Set(clean.interests.filter(Boolean))].slice(0, 8) : [];
         clean.previousComparison = Array.isArray(clean.previousComparison) ? clean.previousComparison.filter(id => DESTINATIONS[id]).slice(0, 2) : [];
+        clean.previousPlanComparison = Array.isArray(clean.previousPlanComparison) ? clean.previousPlanComparison.filter(id => PLAN_DATA?.byId?.[id]).slice(0, 2) : [];
         if (!DESTINATIONS[clean.currentDestination]) clean.currentDestination = null;
+        if (!PLAN_DATA?.byId?.[clean.activePlanId]) clean.activePlanId = null;
+        if (!PLAN_DATA?.byId?.[clean.basePlanId]) clean.basePlanId = null;
+        if (!PLAN_DATA?.byId?.[clean.lastPlanId]) clean.lastPlanId = null;
+        if (!['published-plan', 'custom-user-route', 'transport-query'].includes(clean.routeSource)) clean.routeSource = null;
+        if (!DESTINATIONS[clean.pendingPlanDestination]) clean.pendingPlanDestination = null;
+        clean.version = 5;
         return clean;
     };
 
@@ -377,6 +385,51 @@
         return null;
     };
 
+    const detectPlanIds = normalized => {
+        const found = [];
+        const add = id => {
+            if (PLAN_DATA?.byId?.[id] && !found.includes(id)) found.push(id);
+        };
+        const hasPlanLanguage = /\b(plan|plans|trip|itinerary|itineraries|package|route)\b/.test(normalized);
+
+        const hasPublishedDuration = /\b(?:3|5|7|10|three|five|seven|ten)\s*-?\s*(?:day|days)\b/.test(normalized);
+        if (/\b(?:student|students|college|school)\s+(?:kerala\s+)?(?:plan|trip|itinerary)\b|\b(?:plan|trip|itinerary)\s+(?:for\s+)?(?:student|students)\b/.test(normalized)
+            || (!hasPublishedDuration && /\bbest plan for students?\b|\bwhere do students stay\b/.test(normalized))) add('student');
+        if (/\b(?:senior|senior friendly|senior-friendly|easy paced|easy-paced)\s+(?:kerala\s+)?(?:plan|trip|itinerary)\b|\b(?:plan|trip|itinerary)\s+(?:for\s+)?(?:senior|seniors)\b/.test(normalized)
+            || (!hasPublishedDuration && /\bbest plan for seniors?\b/.test(normalized))) add('senior');
+        if (/\b(?:5|five)\s*-?\s*(?:day|days)\b/.test(normalized) && /\b(student|students|college group|school group)\b/.test(normalized)) add('student');
+        if (/\b(?:5|five)\s*-?\s*(?:day|days)\b/.test(normalized) && /\b(senior|seniors|senior couple)\b/.test(normalized)) add('senior');
+        if (/\b(?:normal|standard|regular)\s*(?:five|5)(?:\s*-?\s*day)?(?:\s+(?:plan|trip|itinerary))?\b|\b(?:five|5)(?:\s*-?\s*day)?\s+(?:normal|standard|regular)(?:\s+(?:plan|trip|itinerary))?\b/.test(normalized)) add('five-day');
+
+        const durationMatches = [];
+        const numericPattern = /\b(3|5|7|10)\s*-?\s*(?:day|days)\b/g;
+        let match;
+        while ((match = numericPattern.exec(normalized))) durationMatches.push(Number(match[1]));
+        const words = { three: 3, five: 5, seven: 7, ten: 10 };
+        Object.entries(words).forEach(([word, days]) => {
+            if (new RegExp(`\\b${word}\\s*-?\\s*(?:day|days)\\b`).test(normalized)) durationMatches.push(days);
+        });
+        [...new Set(durationMatches)].forEach(days => {
+            if (days === 3) add('three-day');
+            if (days === 5 && !found.some(id => ['student', 'senior'].includes(id)) && !/\b(student|senior)\b/.test(normalized)) add('five-day');
+            if (days === 5 && /\b(?:normal|standard|regular)\b/.test(normalized)) add('five-day');
+            if (days === 7) add('seven-day');
+            if (days === 10) add('ten-day');
+        });
+
+        if (/\b3\s*(?:or|vs|versus)\s*5\s*(?:day|days)?\b/.test(normalized)) { add('three-day'); add('five-day'); }
+        if (/\b5\s*(?:or|vs|versus)\s*7\s*(?:day|days)?\b/.test(normalized)) { add('five-day'); add('seven-day'); }
+        if (/\b7\s*(?:or|vs|versus)\s*10\s*(?:day|days)?\b/.test(normalized)) { add('seven-day'); add('ten-day'); }
+        return found;
+    };
+
+    const extractDayRequest = normalized => {
+        const range = normalized.match(/\bdays?\s*(\d{1,2})\s*(?:to|-|through)\s*(?:day\s*)?(\d{1,2})\b/);
+        if (range) return { day: null, range: [Number(range[1]), Number(range[2])], last: false };
+        const day = normalized.match(/\bday\s*(\d{1,2})\b/);
+        return { day: day ? Number(day[1]) : null, range: null, last: /\b(last|final) day\b/.test(normalized) };
+    };
+
     const extractMoney = normalized => {
         const compact = normalized.match(/(?:inr|rs|rupees?)?\s*(\d+(?:\.\d+)?)\s*k\b/);
         if (compact) return Math.round(Number(compact[1]) * 1000);
@@ -398,8 +451,14 @@
         const context = cleanContext(rawContext);
         const normalized = normaliseText(question);
         let destinations = detectDestinations(normalized);
+        const planIds = detectPlanIds(normalized);
+        const dayRequest = extractDayRequest(normalized);
         const referencesThere = /\b(there|that place|that destination|it)\b/.test(normalized);
         const referencesOther = /\b(other one|the other|other place)\b/.test(normalized);
+
+        if (!destinations.length && context.pendingPlanDestination && /\b(remove|skip|drop) (?:it|that|this)\b/.test(normalized)) {
+            destinations = [context.pendingPlanDestination];
+        }
 
         if (referencesOther && context.previousComparison.length === 2) {
             const alternative = context.previousComparison.find(id => id !== context.currentDestination) || context.previousComparison[1];
@@ -424,6 +483,9 @@
         else if (/\b(couple|honeymoon|partners?)\b/.test(normalized)) travellerType = 'couple';
         else if (/\b(solo|alone|by myself)\b/.test(normalized)) travellerType = 'solo';
         else if (/\b(family|families|kids?|children|parents)\b/.test(normalized)) travellerType = 'family';
+        const studentAgeGroup = /\b(school students?|school group|minors?|under 18|children students?)\b/.test(normalized)
+            ? 'school'
+            : /\b(college students?|college group|adult students?|university students?)\b/.test(normalized) ? 'college' : null;
 
         const familyOf = normalized.match(/\bfamily of (\d{1,2}|one|two|three|four|five|six|seven|eight)\b/);
         const familySize = familyOf ? (Number(familyOf[1]) || NUMBER_WORDS[familyOf[1]]) : null;
@@ -452,6 +514,7 @@
         if (/\b(flight|fly|flying)\b/.test(normalized)) transportModes.push('flight');
         if (/\b(bus|ksrtc)\b/.test(normalized)) transportModes.push('bus');
         const modeComparison = /\b(car|train|flight|bus|taxi|cab)\s+(?:or|vs|versus)\s+(car|train|flight|bus|taxi|cab)\b/.test(normalized);
+        const planComparison = planIds.length >= 2 && /\b(or|vs|versus|compare|which|better|difference)\b/.test(normalized);
         const routeQuestion = destinations.length >= 2 && (/\b(from|to|between|route|travel|drive|road|map|fly|flight|train|car|cab)\b/.test(normalized) || destinations.length >= 3);
 
         let accommodationPreference = null;
@@ -473,16 +536,25 @@
         if (monthKey && !intents.includes('weather')) intents.push('weather');
         if (destinations.length && !intents.length) intents.push('destination');
         if (!modeComparison && destinations.length >= 2 && /\b(or|vs|versus|compare|better|cheaper|which)\b/.test(normalized) && !intents.includes('comparison')) intents.push('comparison');
+        if (planIds.length || dayRequest.day || dayRequest.range || dayRequest.last || /\b(which plans?|does (?:it|this|the .*plan)|where do we stay each night|hotel changes|overnight bases?|which day|when do we|when is|why (?:does|doesnt|is|isnt)|map the .*plan|show the .*plan)\b/.test(normalized)) {
+            if (!intents.includes('plan')) intents.push('plan');
+        }
+        if (planComparison) {
+            const comparisonIndex = intents.indexOf('comparison');
+            if (comparisonIndex >= 0) intents.splice(comparisonIndex, 1);
+        }
         if (!intents.length && /\b(hi|hello|hey|namaste|bro|brother)\b/.test(normalized)) intents.push('help');
 
-        return { normalized, destinations, duration, budget, month: monthKey || null, adults, children, seniors, infants, familySize, totalTravellers, travellerType, interests, pace, transportPreference, transportModes, modeComparison, routeQuestion, accommodationPreference, intents, referencesThere, referencesOther };
+        return { normalized, destinations, planIds, planComparison, dayRequest, duration, budget, month: monthKey || null, adults, children, seniors, infants, familySize, totalTravellers, travellerType, studentAgeGroup, interests, pace, transportPreference, transportModes, modeComparison, routeQuestion, accommodationPreference, intents, referencesThere, referencesOther };
     };
 
     const mergeEntitiesIntoContext = (rawContext, entities) => {
         const context = cleanContext(rawContext);
         const removingDestination = /\b(remove|skip|drop)\b/.test(entities.normalized);
-        const addingDestination = /\b(add|include)\b/.test(entities.normalized);
+        const addingDestination = /\badd\b/.test(entities.normalized)
+            || (/\binclude\b/.test(entities.normalized) && !/\b(does|which|plan|it|this|that)\b/.test(entities.normalized));
         const routeDestinations = entities.destinations.filter(id => ROUTE_CORE?.destinations?.[id]);
+        const editingPlanRoute = (removingDestination || addingDestination) && routeDestinations.length && ['published-plan', 'custom-user-route'].includes(context.routeSource);
 
         if (removingDestination && routeDestinations.length && context.activeRoute.length) {
             context.activeRoute = context.activeRoute.filter(id => !routeDestinations.includes(id));
@@ -490,6 +562,15 @@
             context.activeRoute = [...new Set([...context.activeRoute, ...routeDestinations])].slice(0, 8);
         } else if (routeDestinations.length >= 2 && (entities.routeQuestion || entities.intents.includes('transport') || routeDestinations.length >= 3)) {
             context.activeRoute = [...new Set(routeDestinations)].slice(0, 8);
+            context.routeSource = 'transport-query';
+            context.activePlanId = null;
+        }
+
+        if (editingPlanRoute) {
+            context.basePlanId = context.activePlanId || context.basePlanId || context.lastPlanId;
+            context.activePlanId = null;
+            context.routeSource = 'custom-user-route';
+            context.pendingPlanDestination = null;
         }
 
         if (entities.destinations.length) {
@@ -503,6 +584,7 @@
         }
         if (entities.duration) context.duration = entities.duration;
         if (entities.travellerType) context.travellerType = entities.travellerType;
+        if (entities.studentAgeGroup) context.studentAgeGroup = entities.studentAgeGroup;
         if (entities.adults !== null) context.adults = entities.adults;
         if (entities.children !== null) context.children = entities.children;
         if (entities.seniors !== null) context.seniors = entities.seniors;
@@ -519,7 +601,7 @@
         if (entities.transportPreference) context.transportPreference = entities.transportPreference;
         if (entities.accommodationPreference) context.accommodationPreference = entities.accommodationPreference;
 
-        if (/\b(skip|remove|without)\b/.test(entities.normalized)) {
+        if (/\b(skip|remove|without|dont want|do not want|hate)\b/.test(entities.normalized)) {
             context.interests = context.interests.filter(interest => !entities.interests.includes(interest));
         } else if (addingDestination || entities.interests.length) {
             context.interests = [...new Set([...context.interests, ...entities.interests])].slice(0, 8);
@@ -601,6 +683,8 @@
         if (group) remembered.push(group);
         if (context.destinations.length) remembered.push(`places: ${formatList(destinationNames(context.destinations))}`);
         if (context.activeRoute.length >= 2) remembered.push(`active route: ${routeLine(context.activeRoute)}`);
+        if (context.activePlanId) remembered.push(`active plan: ${planById(context.activePlanId)?.name}`);
+        else if (context.routeSource === 'custom-user-route' && context.basePlanId) remembered.push(`modified from: ${planById(context.basePlanId)?.name}`);
         if (context.interests.length) remembered.push(`interests: ${formatList(context.interests)}`);
         if (context.month) remembered.push(`travel month: ${MONTHS[context.month].name}`);
         if (context.budget) remembered.push(`planning ceiling: ${formatMoney(context.budget)}`);
@@ -663,11 +747,147 @@
         return result('comparison', `${difference} ${decision.reason}${month}`, mapLink(ids), ['transport', 'hotels', 'choose-plan']);
     };
 
+    const planById = id => PLAN_DATA?.byId?.[id] || null;
+
     const choosePlan = context => {
         const duration = context.duration;
-        if (duration === 5 && context.travellerType === 'students') return PLANS.find(plan => plan.id === 'student');
-        if (duration === 5 && context.travellerType === 'senior') return PLANS.find(plan => plan.id === 'senior');
+        if (duration === 5 && context.travellerType === 'students') return planById('student');
+        if (duration === 5 && context.travellerType === 'senior') return planById('senior');
+        if (duration === 5 && context.avoidLongDrives) return planById('senior');
         return PLANS.find(plan => plan.days === duration && !['student', 'senior'].includes(plan.id)) || null;
+    };
+
+    const setPublishedPlan = (context, plan) => {
+        context.duration = plan.days;
+        context.activePlanId = plan.id;
+        context.basePlanId = plan.id;
+        context.lastPlanId = plan.id;
+        context.routeSource = 'published-plan';
+        context.activeRoute = [...plan.route];
+        context.destinations = [...plan.route];
+        context.currentDestination = plan.route.at(-1) || null;
+        context.pendingPlanDestination = null;
+        return plan;
+    };
+
+    const resolvePlan = (entities, context) => {
+        if (entities.planIds.length === 1) return planById(entities.planIds[0]);
+        return planById(context.activePlanId) || planById(context.basePlanId) || planById(context.lastPlanId) || choosePlan(context);
+    };
+
+    const planMetrics = plan => {
+        if (!plan || !ROUTE_CORE) return null;
+        if (plan.route.length === 2) {
+            const point = ROUTE_CORE.pointSummary(plan.route[0], plan.route[1]);
+            return point ? { distance: point.route.distance, minutes: point.route.minutes, longestLeg: { fromId: plan.route[0], toId: plan.route[1], route: point.route }, comfort: plan.driveLoad } : null;
+        }
+        return ROUTE_CORE.multiSummary(plan.route);
+    };
+
+    const planMapLink = (plan, route = plan?.route || []) => {
+        const link = mapLink(route);
+        if (plan && link) link[1] = `Open the ${plan.name} route on the map`;
+        return link;
+    };
+
+    const planDay = (plan, number) => plan?.dayByDay.find(item => item.days.includes(number)) || null;
+    const planRouteForDays = (plan, fromDay, toDay) => {
+        const included = new Set(plan.dayByDay.filter(item => item.days.some(day => day >= fromDay && day <= toDay)).flatMap(item => item.destinations));
+        return plan.route.filter(id => included.has(id));
+    };
+
+    const planDayText = (plan, number) => {
+        const entry = planDay(plan, number);
+        if (!entry) return `The ${plan.name} has no Day ${number}; it runs for ${plan.days} days.`;
+        if (entry.days.length > 1) {
+            const specific = entry.perDay?.[number];
+            return specific
+                ? `Day ${number} is part of ${entry.label}, ${entry.title}: ${specific}`
+                : `Day ${number} is part of the grouped ${entry.label} section, ${entry.title}. ${entry.summary}`;
+        }
+        return `${entry.label} - ${entry.title}: ${entry.summary}`;
+    };
+
+    const compactPlanSummary = plan => {
+        const days = plan.dayByDay.map(item => `${item.label}: ${item.title}`).join('; ');
+        return `${plan.name}. Route: ${routeLine(plan.route)}. Pace: ${plan.pace}. Best for ${formatList(plan.bestFor.slice(0, 2))}. ${days}.`;
+    };
+
+    const planComparisonDecision = (left, right, text, context) => {
+        const leftMetrics = planMetrics(left);
+        const rightMetrics = planMetrics(right);
+        if (/\b(less|least|fewer) driv|shorter transfer|less tiring|more relaxed|fewer hotel changes\b/.test(text)) {
+            const leftScore = (leftMetrics?.minutes || 9999) + (left.overnightBases.length * 30);
+            const rightScore = (rightMetrics?.minutes || 9999) + (right.overnightBases.length * 30);
+            return leftScore <= rightScore ? left : right;
+        }
+        const interest = Object.keys(INTEREST_PATTERNS).find(key => new RegExp(`\\b${key.replace(/s$/, '')}s?\\b`).test(text));
+        if (interest) {
+            const leftHas = left.interests.includes(interest);
+            const rightHas = right.interests.includes(interest);
+            if (leftHas !== rightHas) return leftHas ? left : right;
+        }
+        if (/\b(beach|beaches)\b/.test(text)) return left.interests.includes('beaches') !== right.interests.includes('beaches') ? (left.interests.includes('beaches') ? left : right) : null;
+        if (context.travellerType === 'senior') return [left, right].find(plan => plan.id === 'senior') || null;
+        if (context.travellerType === 'students') return [left, right].find(plan => plan.id === 'student') || null;
+        return null;
+    };
+
+    const buildPlanComparisonReply = (entities, context) => {
+        const ids = entities.planIds.length >= 2 ? entities.planIds.slice(0, 2) : context.previousPlanComparison.slice(0, 2);
+        if (ids.length < 2) return result('plan-comparison-clarify', 'Which two published plans should I compare?', ['itineraries.html', 'View all plans'], ['choose-plan', 'budget']);
+        const [left, right] = ids.map(planById);
+        context.previousPlanComparison = ids;
+        const winner = planComparisonDecision(left, right, entities.normalized, context);
+        context.planComparisonWinner = winner?.id || null;
+
+        let difference;
+        if (new Set(ids).has('student') && new Set(ids).has('five-day')) difference = 'The student plan uses Kochi, Munnar and Alappuzha with shared, value-conscious choices; the standard 5-day plan adds Thekkady and an overnight houseboat for the classic first-time circuit.';
+        else if (new Set(ids).has('senior') && new Set(ids).has('five-day')) difference = 'The senior plan keeps only Kochi and Kumarakom, two bases and a daytime cruise; the standard 5-day plan adds Munnar, Thekkady and an overnight houseboat, with more driving and hotel changes.';
+        else if (new Set(ids).has('five-day') && new Set(ids).has('seven-day')) difference = 'The 5-day plan is the compact classic Kochi-Munnar-Thekkady-Alappuzha circuit. The 7-day plan adds Kadamakkudy, replaces Alappuzha with a Munroe Island canoe stay and finishes at Varkala, but involves more movement.';
+        else if (new Set(ids).has('seven-day') && new Set(ids).has('ten-day')) difference = 'The 7-day plan stays in south and central Kerala and includes Varkala. The 10-day plan continues to Wayanad, Valiyaparamba and Bekal, adds more offbeat variety and carries a much heavier transfer load.';
+        else difference = `${left.name} is ${left.pace} with ${left.overnightBases.length} bases; ${right.name} is ${right.pace} with ${right.overnightBases.length} bases.`;
+
+        const decision = winner ? ` For this question, ${winner.name} is the stronger fit.` : ' Neither is universally better; choose by available days, preferred pace and the experiences you value most.';
+        return result('plan-comparison', `${difference}${decision}`, [winner?.page || 'itineraries.html', winner ? `View ${winner.name}` : 'Compare all plans'], ['choose-plan', 'budget', 'transport']);
+    };
+
+    const plansMatchingQuestion = entities => {
+        const text = entities.normalized;
+        if (/\b(least driving|fewest hotel changes|most relaxed|most offbeat|best for first timers?|best plan for seniors?|best plan for students?)\b/.test(text)) return null;
+        const destination = entities.destinations[0];
+        return PLANS.filter(plan => {
+            if (destination) return plan.route.includes(destination) || plan.dayByDay.some(day => day.destinations.includes(destination));
+            if (/\bhouseboat\b/.test(text)) return plan.waterExperience === 'overnight houseboat';
+            if (/\bbackwaters?\b/.test(text)) return plan.interests.includes('backwaters');
+            if (/\b(beach|beaches)\b/.test(text)) return plan.interests.includes('beaches');
+            if (/\bwildlife\b/.test(text)) return plan.interests.includes('wildlife');
+            if (/\boffbeat\b/.test(text)) return plan.interests.includes('offbeat');
+            return false;
+        });
+    };
+
+    const buildPlanSearchReply = (entities, context) => {
+        const text = entities.normalized;
+        if (/\bbest plan for seniors?\b/.test(text)) {
+            const plan = setPublishedPlan(context, planById('senior'));
+            return result('plan-feature-search', `The ${plan.name} is the best starting point: two overnight bases, shorter transfers, late starts, rest time and a daytime cruise. Confirm step-free access and boat boarding directly with providers.`, [plan.page, 'View the senior plan'], ['budget', 'transport']);
+        }
+        if (/\bbest plan for students?\b/.test(text)) {
+            const plan = setPublishedPlan(context, planById('student'));
+            const caution = context.studentAgeGroup === 'school' ? ' School groups and minors need supervised accommodation; hostel age and group policies must be checked.' : '';
+            return result('plan-feature-search', `The ${plan.name} is designed for an active, value-conscious group of friends using shared choices.${caution}`, [plan.page, 'View the student plan'], ['budget', 'transport']);
+        }
+        if (/\bbest plan for first timers?\b/.test(text)) return result('plan-feature-search', 'For a short first visit choose the 3-day plan; for the classic hills-and-houseboat circuit choose 5 days; for the fullest first trip with a beach finish choose 7 days.', ['itineraries.html', 'Compare first-time plans'], ['choose-plan', 'budget']);
+        if (/\bmost relaxed\b/.test(text)) return result('plan-feature-search', 'The 5-Day Easy-Paced Senior Plan is the most relaxed published route: two bases, late starts, short activities and a daytime cruise.', ['plan-5-days-seniors.html', 'View the relaxed plan'], ['budget', 'transport']);
+        if (/\bmost offbeat\b/.test(text)) return result('plan-feature-search', 'The 10-Day Kerala Deep Dive contains the most offbeat places: Kadamakkudy, Munroe Island and Valiyaparamba, but it also has the heaviest driving load.', ['plan-10-days.html', 'View the 10-day plan'], ['transport', 'budget']);
+        if (/\bfewest hotel changes\b/.test(text)) return result('plan-feature-search', 'The 3-Day Kochi + Backwaters plan and the 5-Day Easy-Paced Senior Plan each use only two overnight bases, so both require just one hotel or stay change.', ['itineraries.html', 'Compare all plans'], ['choose-plan']);
+        if (/\bleast driving\b/.test(text)) return result('plan-feature-search', 'The 5-Day Easy-Paced Senior Plan has the gentlest transfer pattern, using only Kochi and Kumarakom. The 3-day plan is also light, but includes an overnight houseboat change.', ['plan-5-days-seniors.html', 'View the gentlest route'], ['transport']);
+
+        const matches = plansMatchingQuestion(entities) || [];
+        const feature = entities.destinations[0] ? DESTINATIONS[entities.destinations[0]].name : /\bhouseboat\b/.test(text) ? 'an overnight houseboat' : entities.interests[0] || 'that feature';
+        if (!matches.length) return result('plan-feature-search', `None of the six published plans clearly includes ${feature}. A custom route may be needed.`, ['itineraries.html#trip-finder-title', 'Open the Plan Finder'], ['choose-plan']);
+        return result('plan-feature-search', `${formatList(matches.map(plan => plan.name))} ${matches.length === 1 ? 'includes' : 'include'} ${feature}.`, [matches[0].page, `View ${matches[0].name}`], ['choose-plan', 'budget']);
     };
 
     const generatedRoute = context => {
@@ -697,50 +917,173 @@
     };
 
     const buildPlanReply = (entities, context) => {
-        const days = context.duration;
-        if (!days) return result('plan-clarify', 'Tell me how many days you have, who is travelling and your top two or three interests. I can then suggest a realistic route without forcing every part of Kerala into one trip.', ['itineraries.html#trip-finder-title', 'Open the Plan Finder']);
-        const explicitRoute = context.destinations;
-        const editingRoute = /\b(add|include|remove|skip|drop)\b/.test(entities.normalized);
-        if ((entities.destinations.length || editingRoute) && routeIsRushed(explicitRoute, days)) {
-            const north = explicitRoute.filter(id => ['wayanad', 'kozhikode', 'kannur', 'valiyaparamba', 'bekal'].includes(id));
-            const practical = north.length && days <= 6 ? north.slice(0, 2) : explicitRoute.slice(0, Math.max(2, Math.floor(days / 2)));
-            return result('plan-too-rushed', `${formatList(destinationNames(explicitRoute))} is too rushed for ${days} days because the route needs too many base changes or a long north-south transfer. Keep ${formatList(destinationNames(practical))} and save the other places for a second trip, or add more days.`, ['itineraries.html#trip-finder-title', 'Build a practical plan'], ['transport', 'choose-plan', 'budget']);
+        const text = entities.normalized;
+        const explicitPlan = entities.planIds.length === 1 ? planById(entities.planIds[0]) : null;
+        let plan = explicitPlan || resolvePlan(entities, context);
+        if (plan?.id === 'five-day' && context.avoidLongDrives && !/\b(normal|standard|regular)\b/.test(entities.normalized)) plan = planById('senior');
+        const editingRoute = /\b(add|include|remove|skip|drop)\b/.test(text) && entities.destinations.length;
+        const requestsMap = /\b(map it|map this|show .* on (?:the )?map|open .* on (?:the )?map|map the|show .* route)\b/.test(text);
+
+        if ((entities.planComparison || (context.previousTopic === 'plan-comparison' && context.previousPlanComparison.length === 2 && /\b(which one|which|less|more|cheaper|better|beaches?|backwaters?|driving|choose that one)\b/.test(text)))) {
+            if (/\bchoose that one\b/.test(text) && context.planComparisonWinner) {
+                plan = setPublishedPlan(context, planById(context.planComparisonWinner));
+                return result('plan-recommendation', `Choose the ${plan.name}. I have made it the active plan, so you can now ask about a day, overnight stay, budget or map route.`, [plan.page, 'View the full plan'], ['budget', 'transport', 'hotels']);
+            }
+            return buildPlanComparisonReply(entities, context);
         }
 
-        if (editingRoute && explicitRoute.length) {
-            const basePlan = PLANS.find(plan => plan.id === context.lastPlanId) || choosePlan(context) || PLANS[1];
-            return result('custom-plan-adjusted', `Updated: your ${days}-day route now uses ${formatList(destinationNames(explicitRoute))}. Recheck the daily order and transfer load before treating this as final; the ${basePlan.name} remains the closest detailed page to adapt.`, [basePlan.page, 'Review the closest detailed plan'], ['transport', 'budget', 'hotels']);
+        if (/\bwhich plans?|which plan|best plan for|least driving|most relaxed|most offbeat|fewest hotel changes\b/.test(text) && !/\bdoes\b/.test(text)) return buildPlanSearchReply(entities, context);
+
+        if (editingRoute && context.activeRoute.length >= 2) {
+            const basePlan = planById(context.basePlanId) || planById(context.lastPlanId) || choosePlan(context) || PLANS[1];
+            const route = context.activeRoute;
+            const warning = routeIsRushed(route, context.duration) ? ' This version is rushed for the selected duration, so add time or remove another base.' : ' This gives more time to the remaining stops, but the daily schedule must be rebuilt around the new route.';
+            return result('custom-plan-adjusted', `Updated: your modified ${context.duration || basePlan.days}-day route is now ${routeLine(route)}.${warning} It is no longer the untouched ${basePlan.name}.`, mapLink(route), ['transport', 'budget', 'hotels']);
         }
 
-        if (entities.destinations.length >= 2 && explicitRoute.length >= 2) {
-            const basePlan = choosePlan(context) || (days < 7 ? PLANS[1] : days < 10 ? PLANS[2] : PLANS[3]);
+        if (entities.destinations.length >= 2 && /\b(plan|trip|days?)\b/.test(text)) {
+            const days = context.duration || explicitPlan?.days || 5;
+            const route = entities.destinations.filter(id => ROUTE_CORE?.destinations?.[id]);
+            const basePlan = explicitPlan || (days < 7 ? planById('five-day') : days < 10 ? planById('seven-day') : planById('ten-day'));
+            context.activePlanId = null;
+            context.basePlanId = basePlan.id;
             context.lastPlanId = basePlan.id;
-            return result('custom-plan', `For ${days} days, use ${formatList(destinationNames(explicitRoute))} in that order. The route is workable if transfer days stay light; review every road leg before finalising overnight stops. The ${basePlan.name} is the closest detailed website plan to adapt.`, mapLink(explicitRoute), ['transport', 'budget', 'hotels']);
+            context.activeRoute = [...route];
+            context.routeSource = 'custom-user-route';
+            context.destinations = [...route];
+            if (routeIsRushed(route, days)) return result('plan-too-rushed', `${routeLine(route)} is too rushed for ${days} days because it needs too many base changes or a long north-south transfer. Remove a base or add days.`, mapLink(route), ['transport', 'choose-plan']);
+            return result('custom-plan', `For ${days} days, your custom route is ${routeLine(route)}. Review every road leg before assigning overnight stops; the ${basePlan.name} is the closest published itinerary to adapt.`, mapLink(route), ['transport', 'budget', 'hotels']);
         }
 
-        const existing = choosePlan(context);
-        if (existing) {
-            const matched = context.interests.filter(interest => existing.interests.includes(interest));
-            const missing = context.interests.filter(interest => !existing.interests.includes(interest));
-            let adjustment = '';
-            if (context.travellerType === 'senior' && existing.id !== 'senior') adjustment = ' For seniors, use private transfers, lighter sightseeing and an extra rest stop; confirm room and boat access directly.';
-            if (context.travellerType === 'students' && existing.id !== 'student') adjustment = ' For students, use shared rooms and transfers where suitable, but keep the displayed family-plan pricing assumptions separate.';
-            if (context.avoidLongDrives && existing.driveLoad !== 'light') adjustment += ' Because you want fewer long drives, remove one base or add a rest night.';
-            const interestText = matched.length ? ` It includes ${formatList(matched)}.` : '';
-            const missingText = missing.length ? ` It does not fully cover ${formatList(missing)}, so treat those as optional rather than forcing them in.` : '';
-            context.lastPlanId = existing.id;
-            if (!context.destinations.length) context.destinations = [...existing.route];
-            return result('plan-recommendation', `For ${days} days, start with the ${existing.name}: ${formatList(destinationNames(existing.route))}. Its pace is ${existing.pace}.${interestText}${missingText}${adjustment}`, [existing.page, 'View the full plan'], ['budget', 'transport', 'hotels']);
+        if (!plan && entities.duration) {
+            if (context.routeSource === 'custom-user-route' && context.activeRoute.length >= 2) {
+                return result('custom-plan', `Your custom route remains ${routeLine(context.activeRoute)} with the new ${context.duration}-day limit. I have kept it because you built it manually; ask me to replace it with the published ${context.duration}-day plan if preferred.`, mapLink(context.activeRoute), ['transport', 'budget']);
+            }
+            plan = choosePlan(context);
+        }
+
+        if (plan && (entities.duration || explicitPlan) && !editingRoute && (!context.activePlanId || context.activePlanId !== plan.id || context.routeSource !== 'published-plan')) setPublishedPlan(context, plan);
+
+        if (plan && requestsMap) {
+            if (context.routeSource === 'custom-user-route' && context.activeRoute.length >= 2) {
+                return result('plan-map', `Opening your modified ${context.duration || plan.days}-day route: ${routeLine(context.activeRoute)}.`, mapLink(context.activeRoute), ['transport', 'budget']);
+            }
+            let route = plan.route;
+            const range = entities.dayRequest.range || (/\bfirst half\b/.test(text) ? [1, Math.ceil(plan.days / 2)] : null);
+            if (range) route = planRouteForDays(plan, range[0], range[1]);
+            if (route.length < 2) return result('plan-map-limited', `${range ? `Days ${range[0]}-${range[1]}` : 'That section'} contains only one mapped base, so open the full itinerary route instead.`, planMapLink(plan), ['transport']);
+            return result('plan-map', `Opening ${range ? `Days ${range[0]}-${range[1]} of ` : ''}${plan.name}: ${routeLine(route)}.`, planMapLink(plan, route), ['transport', 'budget']);
+        }
+
+        if (plan && !/^why\b/.test(text) && !/\b(dont want|do not want|without|skip)\b/.test(text) && /\bdoes\b|\binclude|\bhas? (?:a |an )?(?:houseboat|beach|wildlife|backwater)/.test(text)) {
+            const destination = entities.destinations[0];
+            let feature = destination ? DESTINATIONS[destination].name : /\bhouseboat\b/.test(text) ? 'an overnight houseboat' : /\b(beach|beaches)\b/.test(text) ? 'a beach' : /\bwildlife\b/.test(text) ? 'wildlife' : /\bbackwaters?\b/.test(text) ? 'backwaters' : entities.interests[0];
+            const included = destination ? plan.route.includes(destination) || plan.dayByDay.some(day => day.destinations.includes(destination))
+                : /\bhouseboat\b/.test(text) ? plan.waterExperience === 'overnight houseboat'
+                    : /\b(beach|beaches)\b/.test(text) ? plan.interests.includes('beaches')
+                        : /\bwildlife\b/.test(text) ? plan.interests.includes('wildlife')
+                            : /\bbackwaters?\b/.test(text) ? plan.interests.includes('backwaters') : plan.interests.includes(feature);
+            let explanation = included ? `Yes. The ${plan.name} includes ${feature}.` : `No. The ${plan.name} does not include ${feature}.`;
+            if (!included && plan.id === 'seven-day' && destination === 'alappuzha') explanation += ' It uses Munroe Island for a quieter small-canal canoe and village-homestay experience instead.';
+            if (!included && plan.id === 'senior' && destination === 'munnar') explanation += ' It keeps Kochi and Kumarakom to avoid hill roads, frequent packing and longer transfers.';
+            if (!included && plan.id === 'student' && destination === 'thekkady') explanation += ' The student route keeps three bases to reduce time and shared costs.';
+            return result('plan-inclusion', explanation, [plan.page, 'View the full itinerary'], ['transport', 'budget']);
+        }
+
+        if (plan && (entities.dayRequest.day || entities.dayRequest.last || entities.dayRequest.range || /\bwhich day|when do we|when is|when do i|houseboat day\b/.test(text))) {
+            if (entities.dayRequest.range) {
+                const [from, to] = entities.dayRequest.range;
+                const entries = plan.dayByDay.filter(item => item.days.some(day => day >= from && day <= to));
+                return result('plan-days', `${plan.name}, Days ${from}-${to}: ${entries.map(item => `${item.label} is ${item.title}`).join('; ')}.`, [plan.page, 'View the day-by-day plan'], ['transport', 'hotels']);
+            }
+            if (entities.dayRequest.day || entities.dayRequest.last) {
+                const number = entities.dayRequest.last ? plan.days : entities.dayRequest.day;
+                return result('plan-day', planDayText(plan, number), [plan.page, 'View the day-by-day plan'], ['transport', 'hotels']);
+            }
+            const destination = entities.destinations[0];
+            const houseboat = /\bhouseboat\b/.test(text);
+            const entry = plan.dayByDay.find(item => destination ? item.destinations.includes(destination) : houseboat && /houseboat/i.test(`${item.title} ${item.summary}`));
+            return entry
+                ? result('plan-day-search', `${entry.label} of the ${plan.name}: ${entry.title}. ${entry.summary}`, [plan.page, 'View the day-by-day plan'], ['transport', 'hotels'])
+                : result('plan-day-search', `That activity is not part of the published ${plan.name}.`, [plan.page, 'View the itinerary'], ['choose-plan']);
+        }
+
+        if (plan && /\b(where do we stay|stay each night|how many nights|hotel changes|overnight bases?|sleep on|which night|where do students stay|how many bases)\b/.test(text)) {
+            const destination = entities.destinations[0];
+            if (/\bhow many nights\b/.test(text) && destination) {
+                const base = plan.overnightBases.find(item => item.destination === destination);
+                return result('plan-overnights', base ? `The ${plan.name} stays ${base.nights} night${base.nights === 1 ? '' : 's'} in ${DESTINATIONS[destination].name}.` : `The ${plan.name} does not schedule an overnight stay in ${DESTINATIONS[destination].name}.`, [plan.page, 'View stay suggestions'], ['hotels']);
+            }
+            if (/\bsleep on|which night.*houseboat\b/.test(text)) {
+                const houseboat = plan.overnightBases.find(item => item.type === 'houseboat');
+                return result('plan-overnights', houseboat ? `Yes. The ${plan.name} sleeps on the Alappuzha houseboat on Night 2 in the 3-day plan or Night 4 in the 5-day plan.`.replace('Night 2 in the 3-day plan or Night 4 in the 5-day plan', plan.id === 'three-day' ? 'Night 2' : 'Night 4') : `No. The ${plan.name} does not include an overnight houseboat.`, [plan.page, 'View stay details'], ['hotels']);
+            }
+            if (/\bhotel changes\b/.test(text)) return result('plan-overnights', `The ${plan.name} uses ${plan.overnightBases.length} overnight bases, so it has about ${Math.max(0, plan.overnightBases.length - 1)} hotel or stay changes.`, [plan.page, 'View stay details'], ['hotels']);
+            const stays = plan.overnightBases.map(base => `${DESTINATIONS[base.destination].name}: ${base.nights} night${base.nights === 1 ? '' : 's'} (${base.type})`);
+            const caution = plan.id === 'student' ? ' Hostel age and group policies must be checked; minors need supervised accommodation.' : plan.id === 'senior' ? ' Confirm step-free rooms, bathroom access and boarding arrangements directly.' : '';
+            return result('plan-overnights', `${plan.name} overnights: ${stays.join('; ')}.${caution}`, [plan.page, 'View stay suggestions'], ['hotels', 'budget']);
+        }
+
+        if (plan && /^why\b|\bwhy does|\bwhy doesnt|\bwhy is\b/.test(text)) {
+            if (plan.id === 'seven-day' && (/\balappuzha\b/.test(text) || /\bmunroe\b/.test(text))) return result('plan-why', 'The 7-day plan uses Munroe Island instead of Alappuzha to provide a quieter village homestay and small-canal canoe experience rather than the classic busy houseboat corridor.', [plan.page, 'View the 7-day plan'], ['transport']);
+            if (plan.id === 'senior' && /\bmunnar\b/.test(text)) return result('plan-why', 'Munnar would add winding hill roads, another hotel change and more walking. The senior plan keeps Kochi and Kumarakom so starts can be later and rest time remains protected.', [plan.page, 'View the senior plan'], ['transport']);
+            if (plan.id === 'student' && /\bcheap|cheaper|cost|budget\b/.test(text)) return result('plan-why', 'The student plan controls costs through three bases, shared transport, budget-oriented stays and a shared shikara or canoe instead of automatically including a premium overnight houseboat.', [plan.page, 'View the student plan'], ['budget']);
+            if (plan.id === 'ten-day') return result('plan-why', 'The 10-day plan spans south, central and north Kerala. Its eight stops create major transfers, especially Thekkady to Wayanad, so it is an active deep-dive rather than a relaxed holiday.', [plan.page, 'View the 10-day plan'], ['transport']);
+            return result('plan-why', `${plan.name} is designed around ${formatList(plan.bestFor.slice(0, 2))}; its ${plan.pace} pace and ${plan.overnightBases.length} bases follow that purpose.`, [plan.page, 'View the full plan'], ['transport']);
+        }
+
+        if (plan && /\b(how much driving|longest drive|route tiring|too tiring|less driving|can seniors handle|driving is in)\b/.test(text)) {
+            const metrics = planMetrics(plan);
+            const longest = metrics?.longestLeg;
+            const longestText = longest ? `${routeLine([longest.fromId, longest.toId])}, approximately ${longest.route.distance} km / ${ROUTE_CORE.formatDuration(longest.route.minutes)}` : 'not available in the stored route data';
+            const caution = plan.id === 'ten-day' ? ' This is a very demanding route and needs light sightseeing after the longest transfers.' : plan.driveLoad === 'light' ? ' It is one of the gentler published routes.' : ' Keep transfer days lighter, especially for children or seniors.';
+            return result('plan-driving', `${plan.name} has a ${plan.driveLoad} driving load. The longest mapped leg is ${longestText}.${caution}`, planMapLink(plan), ['transport', 'budget']);
+        }
+
+        if (plan && /\b(cost|budget|how much|under\s+\d+)\b/.test(text)) {
+            setPublishedPlan(context, plan);
+            return result('plan-budget', `Use the ${plan.name} Personalised Budget Estimator for your traveller count, ages, month, rooms and comfort level. It provides a planning estimate, not a live booking price.`, [`${plan.page}#budget`, 'Open this plan budget estimator'], ['budget', 'hotels']);
+        }
+
+        if (plan && /\b(dont want|do not want|skip|without)\b.*\bwildlife\b/.test(text) && plan.route.includes('thekkady')) {
+            context.pendingPlanDestination = 'thekkady';
+            return result('plan-change-offer', `Thekkady provides more than wildlife - it also adds spice country and the Periyar landscape. If none of that matters, say "Remove it" and I will turn this into a custom route with more time in the remaining stops.`, [plan.page, 'Review the current plan'], ['choose-plan']);
+        }
+        if (plan && /\b(dont want|do not want|skip|without)\b.*\bhouseboat\b/.test(text)) return result('plan-change-offer', `The overnight houseboat is a core part of the ${plan.name}. You can replace it with a land hotel plus a shorter day cruise, but that becomes a modified plan and the budget should be recalculated.`, [`${plan.page}#budget`, 'Recalculate this plan'], ['budget', 'hotels']);
+
+        if (plan) {
+            setPublishedPlan(context, plan);
+            const studentNote = plan.id === 'student' && context.studentAgeGroup === 'school' ? ' School groups and minors need supervised accommodation; do not assume an 18+ hostel will accept them.' : '';
+            const seniorNote = context.travellerType === 'senior' && plan.id !== 'senior' ? ' For seniors, use lighter sightseeing and confirm access directly.' : '';
+            const longDriveNote = plan.id === 'ten-day' ? ' It is active and includes substantial transfers, especially Thekkady to Wayanad.' : context.avoidLongDrives && plan.driveLoad !== 'light' ? ' Because you want fewer long drives, consider the senior plan structure or remove one base.' : '';
+            return result('plan-recommendation', `${compactPlanSummary(plan)}${studentNote}${seniorNote}${longDriveNote}`, [plan.page, 'View the full plan'], ['budget', 'transport', 'hotels']);
+        }
+
+        const days = context.duration;
+        if (!days) {
+            if (/\bgrandparents?\b/.test(text) && /\b(kids?|children)\b/.test(text)) return result('plan-recommendation', 'For grandparents and children, start with the gentle Kochi-Kumarakom structure: fewer hotel changes, short transfers and rest time. Tell me your days and interests before adding hills or more bases.', ['plan-5-days-seniors.html', 'View the gentle route'], ['choose-plan']);
+            return result('plan-clarify', 'Tell me how many days you have, who is travelling and your top two or three interests. I can then suggest a realistic published plan or custom route.', ['itineraries.html#trip-finder-title', 'Open the Plan Finder']);
+        }
+
+        const explicitRoute = context.destinations;
+        if (entities.destinations.length >= 2 && explicitRoute.length >= 2) {
+            const basePlan = days < 7 ? planById('five-day') : days < 10 ? planById('seven-day') : planById('ten-day');
+            context.basePlanId = basePlan.id;
+            context.lastPlanId = basePlan.id;
+            context.activePlanId = null;
+            context.activeRoute = [...explicitRoute];
+            context.routeSource = 'custom-user-route';
+            if (routeIsRushed(explicitRoute, days)) return result('plan-too-rushed', `${routeLine(explicitRoute)} is too rushed for ${days} days because it needs too many base changes or a long north-south transfer. Remove a base or add days.`, mapLink(explicitRoute), ['transport', 'choose-plan']);
+            return result('custom-plan', `For ${days} days, your custom route is ${routeLine(explicitRoute)}. Review every road leg before assigning overnight stops; the ${basePlan.name} is the closest detailed page to adapt.`, mapLink(explicitRoute), ['transport', 'budget', 'hotels']);
         }
 
         const route = generatedRoute(context);
-        const basePlan = days < 3 ? PLANS[0] : days < 7 ? PLANS[1] : days < 10 ? PLANS[2] : PLANS[3];
-        let guidance = '';
-        if (days <= 2) guidance = 'Keep one base and use a short day trip rather than changing hotels.';
-        else if ([4, 6].includes(days)) guidance = 'Use the nearest existing itinerary as a base and add time to the places you value most instead of adding a distant region.';
-        else if ([8, 9, 11, 12, 13, 14].includes(days)) guidance = 'Use the nearest shorter plan as a base, then add rest nights or one nearby region so the trip stays realistic.';
+        const basePlan = days < 3 ? planById('three-day') : days < 7 ? planById('five-day') : days < 10 ? planById('seven-day') : planById('ten-day');
+        context.basePlanId = basePlan.id;
         context.lastPlanId = basePlan.id;
-        return result('custom-plan', `For ${days} days, a practical outline is ${formatList(destinationNames(route))}. ${guidance} The ${basePlan.name} is the closest detailed website plan to adapt.`, [basePlan.page, 'Open the closest detailed plan'], ['budget', 'transport', 'hotels']);
+        context.activeRoute = [...route];
+        context.routeSource = 'custom-user-route';
+        return result('custom-plan', `For ${days} days, a practical custom outline is ${routeLine(route)}. Use the ${basePlan.name} as the closest published itinerary, then add rest nights rather than distant regions.`, [basePlan.page, 'Open the closest detailed plan'], ['budget', 'transport', 'hotels']);
     };
 
     const buildBudgetReply = (entities, context) => {
@@ -748,7 +1091,9 @@
         const budget = context.budget;
         const counts = [context.adults, context.children, context.seniors, context.infants].filter(value => value !== null);
         const total = counts.length ? counts.reduce((sum, value) => sum + value, 0) : context.totalTravellers;
-        const plan = choosePlan(context) || (duration ? PLANS.filter(item => !['student', 'senior'].includes(item.id)).sort((a, b) => Math.abs(a.days - duration) - Math.abs(b.days - duration))[0] : null);
+        const explicitPlan = entities.planIds.length === 1 ? planById(entities.planIds[0]) : null;
+        if (explicitPlan) setPublishedPlan(context, explicitPlan);
+        const plan = explicitPlan || planById(context.activePlanId) || planById(context.basePlanId) || choosePlan(context) || (duration ? PLANS.filter(item => !['student', 'senior'].includes(item.id)).sort((a, b) => Math.abs(a.days - duration) - Math.abs(b.days - duration))[0] : null);
         const link = plan ? [`${plan.page}#budget`, 'Open the personalised budget estimator'] : ['itineraries.html', 'Choose a plan and estimate its budget'];
 
         if (/\b(which plan is cheapest|cheapest plan)\b/.test(entities.normalized)) {
@@ -980,6 +1325,14 @@
         if (entities.intents.includes('recall')) reply = buildRecallReply(context);
         else if (entities.intents.includes('live')) reply = buildLiveReply(entities, context);
         else if (entities.intents.includes('language')) reply = buildPhraseReply(entities);
+        else if (entities.intents.includes('budget') && !entities.planComparison && (entities.budget || /\b(which plan is cheapest|cheapest plan|value vs comfortable|value or comfortable|reduce the cost|save money|trip budget|budget for|how much will .*plan|plan.*cost|under\s+\d+)\b/.test(entities.normalized))) reply = buildBudgetReply(entities, context);
+        else if (entities.planComparison) reply = buildPlanReply(entities, context);
+        else if (entities.planIds.length || entities.dayRequest.day || entities.dayRequest.range || entities.dayRequest.last) reply = buildPlanReply(entities, context);
+        else if (entities.intents.includes('plan') && /\b(which plans?|which plan|best plan for|least driving|most relaxed|most offbeat|fewest hotel changes)\b/.test(entities.normalized)) reply = buildPlanReply(entities, context);
+        else if (/\bgrandparents?\b/.test(entities.normalized) && /\b(kids?|children)\b/.test(entities.normalized)) reply = buildPlanReply(entities, context);
+        else if ((previous.activePlanId || previous.basePlanId) && !entities.routeQuestion && !entities.modeComparison && /\b(what happens|which day|when do we|when is|last day|where do we stay|stay each night|how many nights|hotel changes|overnight|sleep on|does it|does this|include|houseboat|beaches?|wildlife|why|how much driving|longest drive|route tiring|map it|show (?:it|that|this) on (?:the )?map|dont want|do not want|remove it)\b/.test(entities.normalized)) reply = buildPlanReply(entities, context);
+        else if (previous.basePlanId && /\b(add|include|remove|skip|drop)\b/.test(entities.normalized) && entities.destinations.length) reply = buildPlanReply(entities, context);
+        else if (previous.previousTopic === 'plan-comparison' && previous.previousPlanComparison.length === 2 && /\b(which one|which|less|more|cheaper|better|beaches?|backwaters?|driving|choose that one)\b/.test(entities.normalized)) reply = buildPlanReply(entities, context);
         else if (entities.referencesOther && entities.destinations.length === 1) reply = buildDestinationReply(entities, context);
         else if (/\bhow many days\b/.test(entities.normalized) && (entities.destinations.length || context.currentDestination)) reply = buildDestinationReply(entities, context);
         else if (entities.duration && entities.intents.includes('plan') && !entities.intents.includes('budget')) reply = buildPlanReply(entities, context);
@@ -999,7 +1352,7 @@
         else if (entities.intents.includes('safety')) reply = buildSafetyReply(entities, context);
         else if (entities.intents.includes('plan') || entities.duration || /\b(what do you recommend|recommend)\b/.test(entities.normalized)) reply = buildPlanReply(entities, context);
         else if (entities.intents.includes('comparison')) reply = buildComparisonReply(entities, context);
-        else reply = buildDestinationReply(entities, context);
+        else reply = entities.destinations.length ? buildDestinationReply(entities, context) : null;
 
         if (!reply && (entities.destinations.length || entities.duration || entities.travellerType || entities.interests.length || entities.budget || entities.month)) reply = buildAcknowledgement(context);
         if (!reply && entities.intents.includes('help')) reply = result('help', 'Ask about Kerala destinations, 1-14 day routes, families, seniors, budgets, stays, food, culture, weather, safety, Malayalam phrases or travel between two places. I remember useful trip details during this conversation.', ['itineraries.html#trip-finder-title', 'Open the Plan Finder'], DEFAULT_SUGGESTIONS);
@@ -1012,7 +1365,8 @@
             reply = result('fallback', `${prefix}I am not sure which part you want to change or compare. Try asking about a route, stay, budget, season or food, or name the two options you mean.`, ['destinations.html', 'Browse Kerala destinations'], ['compare', 'choose-plan', 'hotels', 'transport']);
         }
 
-        const topic = reply.id.startsWith('stay') ? 'stay'
+        const topic = reply.id.startsWith('plan-comparison') ? 'plan-comparison'
+            : reply.id.startsWith('stay') ? 'stay'
             : reply.id.startsWith('food') ? 'food'
                 : reply.id.includes('comparison') ? 'comparison'
                     : reply.id.includes('transport') ? 'transport'
@@ -1028,6 +1382,7 @@
     const API = {
         destinations: DESTINATIONS,
         plans: PLANS,
+        planData: PLAN_DATA,
         phrases: PHRASES,
         routeCore: ROUTE_CORE,
         supportedIntents: Object.keys(INTENT_PATTERNS),
@@ -1072,7 +1427,8 @@
         const input = assistantWidget.querySelector('#assistant-input');
         const historyKey = 'visitKeralaAssistantHistoryV3';
         const oldHistoryKey = 'visitKeralaAssistantHistoryV2';
-        const contextKey = 'visitKeralaAssistantContextV3';
+        const contextKey = 'visitKeralaAssistantContextV4';
+        const oldContextKey = 'visitKeralaAssistantContextV3';
         let context = freshContext();
         let activeAudio = null;
         let activeAudioButton = null;
@@ -1186,6 +1542,7 @@
                 sessionStorage.removeItem(historyKey);
                 sessionStorage.removeItem(oldHistoryKey);
                 sessionStorage.removeItem(contextKey);
+                sessionStorage.removeItem(oldContextKey);
             } catch { /* Nothing else is needed. */ }
             messages.replaceChildren();
             addMessage('bot', 'Conversation cleared. Tell me your days, travellers, interests or a Kerala place.', null, false);
