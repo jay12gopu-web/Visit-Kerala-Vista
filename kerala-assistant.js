@@ -252,7 +252,7 @@
         live: /\b(tomorrow|right now|currently|current weather|raining now|open today|open now|running tomorrow|live price|current(?:\s+\w+){0,2}\s+price|availability today)\b/,
         comparison: /\b(vs|versus|compare|compared|or|which one|which is|better|cheaper|other one)\b/,
         budget: /\b(budget|cost|price|prices|money|how much|expensive|cheap|cheaper|cheapest|affordable|save money|reduce the cost|include flights|under\s+\d+|value|comfortable|premium)\b/,
-        transport: /\b(how do (i|we) get|how to get|travel from|travel between|how far|distance|train|flight|airport|bus|taxi|cab|hire a car|drive|backtracking|fly out|road)\b/,
+        transport: /\b(how do (i|we) get|how to get|travel from|travel between|how far|distance|train|flight|airport|bus|taxi|cab|hire a car|drive|backtracking|fly out|road|map link|show (?:it|this|the route) on (?:the )?map|open (?:it|this|the route) on (?:the )?map)\b/,
         stay: /\b(hotel|hotels|stay|stays|resort|homestay|hostel|room|accommodation|houseboat stay)\b/,
         food: /\b(food|eat|breakfast|vegetarian|vegan|seafood|sadya|malabar|snack|spicy|allerg|cuisine|meal)\b/,
         culture: /\b(kathakali|kalaripayattu|theyyam|onam|vishu|thrissur pooram|boat race|temple etiquette|church|mosque|architecture|handicraft|spice|festival|culture)\b/,
@@ -506,7 +506,16 @@
     const destinationNames = ids => ids.map(id => DESTINATIONS[id]?.name).filter(Boolean);
     const formatList = items => items.length < 2 ? (items[0] || '') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
     const formatMoney = value => `₹${Number(value).toLocaleString('en-IN')}`;
-    const mapLink = ids => ids.length >= 2 ? [`map.html?from=${encodeURIComponent(DESTINATIONS[ids[0]].name)}&to=${encodeURIComponent(DESTINATIONS[ids[1]].name)}`, 'Open this route on the map'] : ['map.html', 'Open the Kerala journey planner'];
+    const mapLink = ids => {
+        const valid = [...new Set(ids.filter(id => DESTINATIONS[id]))];
+        if (valid.length > 2) {
+            const route = valid.map(id => encodeURIComponent(id)).join(',');
+            return [`map.html?mode=multi&route=${route}`, 'Open this multi-city road trip on the map'];
+        }
+        return valid.length === 2
+            ? [`map.html?from=${encodeURIComponent(DESTINATIONS[valid[0]].name)}&to=${encodeURIComponent(DESTINATIONS[valid[1]].name)}`, 'Open this route on the map']
+            : ['map.html', 'Open the Kerala journey planner'];
+    };
     const result = (id, text, link = null, related = DEFAULT_SUGGESTIONS, audio = null) => ({ id, text, link, related, audio });
 
     const monthAdvice = (monthKey, destination) => {
@@ -648,6 +657,12 @@
             return result('custom-plan-adjusted', `Updated: your ${days}-day route now uses ${formatList(destinationNames(explicitRoute))}. Recheck the daily order and transfer load before treating this as final; the ${basePlan.name} remains the closest detailed page to adapt.`, [basePlan.page, 'Review the closest detailed plan'], ['transport', 'budget', 'hotels']);
         }
 
+        if (entities.destinations.length >= 2 && explicitRoute.length >= 2) {
+            const basePlan = choosePlan(context) || (days < 7 ? PLANS[1] : days < 10 ? PLANS[2] : PLANS[3]);
+            context.lastPlanId = basePlan.id;
+            return result('custom-plan', `For ${days} days, use ${formatList(destinationNames(explicitRoute))} in that order. The route is workable if transfer days stay light; review every road leg before finalising overnight stops. The ${basePlan.name} is the closest detailed website plan to adapt.`, mapLink(explicitRoute), ['transport', 'budget', 'hotels']);
+        }
+
         const existing = choosePlan(context);
         if (existing) {
             const matched = context.interests.filter(interest => existing.interests.includes(interest));
@@ -729,7 +744,8 @@
             shortlist = ' This project does not maintain a verified stay shortlist for that place.';
         }
         const accessNote = senior ? ' Confirm lifts, bathroom access, steps and vehicle pickup directly before booking.' : family ? ' Check room occupancy, child policy and meal flexibility before booking.' : '';
-        return result('stay', `${destination.stay}${shortlist}${accessNote} Rates and availability are not live, so open the guide and verify current details with the property.`, [destination.page, `View ${destination.name} stay guidance`], ['budget', 'transport', 'safety']);
+        const seasonalNote = entities.month ? ` ${monthAdvice(entities.month, destination)}` : '';
+        return result('stay', `${destination.stay}${shortlist}${accessNote}${seasonalNote} Rates and availability are not live, so open the guide and verify current details with the property.`, [destination.page, `View ${destination.name} stay guidance`], ['budget', 'transport', 'safety']);
     };
 
     const buildFoodReply = (entities, context) => {
@@ -743,9 +759,13 @@
     };
 
     const buildTransportReply = (entities, context) => {
+        const requestsMap = /\b(map link|show (?:it|this|the route) on (?:the )?map|open (?:it|this|the route) on (?:the )?map)\b/.test(entities.normalized);
         let ids = entities.destinations.slice();
-        if (ids.length < 2 && context.destinations.length >= 2) ids = context.destinations.slice(-2);
+        if (ids.length < 2 && context.destinations.length >= 2) ids = requestsMap ? context.destinations.slice() : context.destinations.slice(-2);
         if (ids.length >= 2) {
+            if (requestsMap && ids.length > 2) {
+                return result('transport-multi-route', `Open the selected ${ids.length}-destination route as a multi-city cab journey: ${formatList(destinationNames(ids))}. The map will show each road leg, approximate totals and recommended breaks.`, mapLink(ids), ['hotels', 'safety', 'choose-plan']);
+            }
             const [fromId, toId] = ids;
             const from = DESTINATIONS[fromId];
             const to = DESTINATIONS[toId];
@@ -858,10 +878,10 @@
         else if (previous.previousTopic === 'stay' && context.currentDestination && (/\b(how much|cheap|cheaper|affordable)\b/.test(entities.normalized) || /\bwhat about\b.*\b(family|senior|kids?|children)\b/.test(entities.normalized))) reply = buildStayReply(entities, context);
         else if (entities.intents.includes('budget')) reply = buildBudgetReply(entities, context);
         else if (entities.intents.includes('transport')) reply = buildTransportReply(entities, context);
+        else if (entities.intents.includes('weather')) reply = buildWeatherReply(entities, context);
         else if (entities.intents.includes('stay') || (previous.previousTopic === 'stay' && /\b(which|what|cheaper|family|senior)\b/.test(entities.normalized))) reply = buildStayReply(entities, context);
         else if (entities.intents.includes('food') || (previous.previousTopic === 'food' && entities.referencesThere)) reply = buildFoodReply(entities, context);
         else if (entities.intents.includes('culture')) reply = buildCultureReply(entities);
-        else if (entities.intents.includes('weather')) reply = buildWeatherReply(entities, context);
         else if (entities.intents.includes('safety')) reply = buildSafetyReply(entities, context);
         else if (entities.intents.includes('plan') || entities.duration || /\b(what do you recommend|recommend)\b/.test(entities.normalized)) reply = buildPlanReply(entities, context);
         else if (entities.intents.includes('comparison')) reply = buildComparisonReply(entities, context);

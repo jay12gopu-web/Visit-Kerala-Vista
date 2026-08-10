@@ -645,9 +645,9 @@
             if (stopLibrary[id] && !unique.includes(id)) unique.push(id);
         });
 
-        fallback.path.slice(1, -1).forEach(id => {
+        const pathStopIds = fallback.path.slice(1, -1).map(id => {
             const destination = destinations[id];
-            if (!destination) return;
+            if (!destination) return null;
             const syntheticId = `destination-${id}`;
             if (!stopLibrary[syntheticId]) {
                 stopLibrary[syntheticId] = {
@@ -657,7 +657,19 @@
                     duration: '45-90 min'
                 };
             }
-            if (!unique.includes(syntheticId)) unique.push(syntheticId);
+            return syntheticId;
+        }).filter(Boolean);
+
+        if (fallback.distance >= 300 && pathStopIds.length) {
+            const positions = pathStopIds.length <= 3
+                ? pathStopIds.map((_, index) => index)
+                : [0.25, 0.5, 0.75].map(ratio => Math.min(pathStopIds.length - 1, Math.round((pathStopIds.length - 1) * ratio)));
+            const distributed = [...new Set(positions.map(index => pathStopIds[index]))];
+            return distributed.slice(0, 3).map(id => stopLibrary[id]);
+        }
+
+        pathStopIds.forEach(id => {
+            if (!unique.includes(id)) unique.push(id);
         });
 
         const chosen = unique.slice(0, 3).map(id => stopLibrary[id]);

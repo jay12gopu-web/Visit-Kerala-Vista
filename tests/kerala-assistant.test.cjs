@@ -137,6 +137,21 @@ check(sequenceA.every(item => item.context.currentDestination === 'munnar'), 'Se
 check(sequenceA.at(-1).context.month === 'july', 'Sequence A retains July');
 check(sequenceA.at(-1).context.travellerType === 'family', 'Sequence A retains family');
 
+const stayToWeather = runSequence([
+    'Tell me about Munnar',
+    'What about hotels?',
+    'Which are cheaper?',
+    'What about for a family?',
+    'What about in July?'
+], ['destination', 'stay', 'stay', 'stay', 'seasonal-weather']);
+check(stayToWeather.at(-1).context.currentDestination === 'munnar', 'Month follow-up retains destination after stay questions');
+
+const multiCityLink = runSequence([
+    'Plan Kochi, Munnar, Thekkady and Alappuzha for 7 days',
+    'Give me the map link'
+], ['custom-plan', 'transport-multi-route']);
+check(multiCityLink.at(-1).reply.link?.[0]?.startsWith('map.html?mode=multi&route='), 'Multi-city plan opens multi-city map', multiCityLink.at(-1).reply.link?.[0]);
+
 const sequenceB = runSequence([
     'Munnar or Wayanad?',
     'Which is easier with children?',

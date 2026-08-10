@@ -1160,7 +1160,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 7. Floating Kerala Travel Assistant
     // ==========================================
     const assistantEngineScript = document.createElement('script');
-    assistantEngineScript.src = 'kerala-assistant.js?v=20260809-context1';
+    assistantEngineScript.src = 'kerala-assistant.js?v=20260810-qa1';
     assistantEngineScript.dataset.keralaAssistantEngine = 'true';
     assistantEngineScript.addEventListener('error', () => {
         console.error('The local Kerala Travel Guide could not be loaded.');
