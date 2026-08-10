@@ -340,6 +340,9 @@
     let terminalLayer = null;
     let mapMarkers = {};
     let forceFallbackRouting = new URLSearchParams(window.location.search).get('routing') === 'fallback';
+    let currentRouteMode = 'point';
+    let multiStopCounter = 0;
+    const MAX_ROUTE_DESTINATIONS = 8;
 
     const elements = {};
     const allDestinationBounds = Object.values(destinations).map(destination => destination.coordinates);
@@ -774,6 +777,16 @@
         });
     }
 
+    function tripStopIcon(number, total) {
+        const terminalClass = number === 1 ? ' is-start' : number === total ? ' is-destination' : '';
+        return L.divIcon({
+            className: 'map-marker-wrap',
+            html: `<span class="route-terminal-marker trip-stop-marker${terminalClass}" aria-label="Trip stop ${number} of ${total}">${number}</span>`,
+            iconSize: [44, 44],
+            iconAnchor: [22, 22]
+        });
+    }
+
     function setMapUnavailable(message) {
         elements.mapLoading.hidden = true;
         elements.mapUnavailable.hidden = false;
@@ -859,6 +872,25 @@
         map.fitBounds(routeLayer.getBounds(), { padding: [54, 54], maxZoom: 11 });
     }
 
+    function drawMultiCityRoute(legs, routeIds) {
+        if (!map) return;
+        clearRouteLayers();
+        routeLayer = L.featureGroup(legs.map(leg => L.polyline(leg.route.coordinates, {
+            color: '#c5a059',
+            weight: 6,
+            opacity: 0.95,
+            lineCap: 'round',
+            lineJoin: 'round',
+            className: 'journey-route-line multi-city-route-segment'
+        }))).addTo(map);
+        terminalLayer = L.layerGroup(routeIds.map((id, index) => L.marker(destinations[id].coordinates, {
+            icon: tripStopIcon(index + 1, routeIds.length),
+            title: `Trip stop ${index + 1}: ${destinations[id].name}`
+        }))).addTo(map);
+        const bounds = routeLayer.getBounds();
+        if (bounds.isValid()) map.fitBounds(bounds, { padding: [62, 62], maxZoom: 10 });
+    }
+
     function renderStops(stops) {
         elements.stops.innerHTML = stops.map(stop => `<article class="journey-stop"><span>${escapeHtml(stop.duration)}</span><h4>${escapeHtml(stop.name)}</h4><p>${escapeHtml(stop.description)}</p><strong>${escapeHtml(stop.why)}</strong></article>`).join('');
     }
@@ -868,6 +900,169 @@
             if (transport) return `<li><i class="fa-solid ${escapeHtml(entry[0])}" aria-hidden="true"></i><span><strong>${escapeHtml(entry[1])}:</strong> ${escapeHtml(entry[2])}</span></li>`;
             return `<li><i class="fa-solid ${escapeHtml(entry[0])}" aria-hidden="true"></i><span>${escapeHtml(entry[1])}</span></li>`;
         }).join('');
+    }
+
+    function validateMultiRouteIds(routeIds) {
+        if (!Array.isArray(routeIds) || routeIds.length < 3) throw new Error('Add at least one intermediate Trip Stop for a Multi-City route.');
+        if (routeIds.length > MAX_ROUTE_DESTINATIONS) throw new Error('Maximum number of trip stops reached.');
+        if (routeIds.some(id => !destinations[id])) throw new Error('Choose every place from the supported destination list.');
+        if (new Set(routeIds).size !== routeIds.length) throw new Error('This destination is already part of your route.');
+        return routeIds;
+    }
+
+    function multiCityRecommendedStops(fallback, fromId, toId, minutes, type) {
+        let count = minutes < 90 ? 0 : minutes < 240 ? 1 : minutes < 360 ? 2 : 3;
+        if (minutes < 120 && ['Hill road', 'Coastal road', 'Backwater connection'].includes(type)) count = 1;
+        return routeStops(fallback, fromId, toId).slice(0, count);
+    }
+
+    function multiCityRoadNote(type, minutes) {
+        if (minutes >= 480) return 'Very long driving leg. Strongly consider an overnight break and avoid major sightseeing after arrival.';
+        if (minutes >= 360) return 'Long driving day. Leave early, plan two or more comfort breaks and keep the evening light.';
+        if (minutes >= 240) return 'This transfer may feel tiring after sightseeing. Start early and keep a proper meal and rest break.';
+        if (type === 'Hill road') return 'Winding and slower road sections are likely near the hill region; travellers prone to motion sickness should prepare.';
+        if (type === 'Backwater connection') return 'The final approach can include narrower village, island or jetty roads.';
+        if (type === 'Coastal road') return 'Allow a buffer for town and beach traffic, especially on weekends.';
+        return 'A generally manageable road leg; allow extra time for traffic and short comfort breaks.';
+    }
+
+    function multiCityComfort(legs) {
+        const veryLongLegs = legs.filter(leg => leg.route.minutes >= 480).length;
+        const longLegs = legs.filter(leg => leg.route.minutes >= 420).length;
+        const totalMinutes = legs.reduce((sum, leg) => sum + leg.route.minutes, 0);
+        if (veryLongLegs >= 1 || longLegs >= 2 || totalMinutes >= 1500) return 'Very Long Drive';
+        if (longLegs >= 1 || totalMinutes >= 900) return 'Long Drive';
+        if (totalMinutes <= 300 && legs.every(leg => leg.route.minutes <= 180) && legs.length <= 3) return 'Easy';
+        return 'Balanced';
+    }
+
+    function multiCityRecommendedDays(routeIds, legs, comfort) {
+        const totalMinutes = legs.reduce((sum, leg) => sum + leg.route.minutes, 0);
+        let minimum = Math.max(routeIds.length, Math.ceil(totalMinutes / 300) + 1);
+        if (legs.some(leg => leg.route.minutes >= 480)) minimum = Math.max(minimum, routeIds.length + 1);
+        const maximum = minimum + (comfort === 'Easy' ? 1 : 2);
+        return { minimum, maximum, label: `${minimum}-${maximum} days` };
+    }
+
+    function multiCityWarnings(legs, comfort) {
+        const warnings = [];
+        legs.forEach((leg, index) => {
+            const name = `${destinations[leg.fromId].name} to ${destinations[leg.toId].name}`;
+            if (leg.route.minutes >= 480) warnings.push(`Leg ${index + 1}, ${name}, is a very long drive. Add an overnight break where practical.`);
+            else if (leg.route.minutes >= 360) warnings.push(`Leg ${index + 1}, ${name}, is a long driving day. Leave early and avoid major sightseeing after the transfer.`);
+        });
+        if (comfort === 'Very Long Drive') warnings.push('This complete route is demanding for children and senior travellers. Add rest days and avoid consecutive long transfers.');
+        else if (comfort === 'Long Drive') warnings.push('Keep a flexible day after the longest transfer, particularly for families and senior travellers.');
+        return warnings;
+    }
+
+    function updateMultiCityUrl(routeIds) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('from');
+        url.searchParams.delete('to');
+        url.searchParams.delete('plan');
+        url.searchParams.set('mode', 'multi');
+        url.searchParams.set('route', routeIds.map(id => destinations[id].name).join(','));
+        window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
+    }
+
+    function updatePointRouteUrl(fromId, toId) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('mode');
+        url.searchParams.delete('route');
+        url.searchParams.set('from', destinations[fromId].name);
+        url.searchParams.set('to', destinations[toId].name);
+        window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
+    }
+
+    function renderMultiCityJourney(routeIds, legs, options = {}) {
+        const totalDistance = legs.reduce((sum, leg) => sum + leg.route.distance, 0);
+        const totalMinutes = legs.reduce((sum, leg) => sum + leg.route.minutes, 0);
+        const comfort = multiCityComfort(legs);
+        const days = multiCityRecommendedDays(routeIds, legs, comfort);
+        const routeNames = routeIds.map(id => destinations[id].name);
+        const warnings = multiCityWarnings(legs, comfort);
+
+        elements.multiRouteLine.textContent = routeNames.join('  ->  ');
+        elements.multiSummaryDestinations.textContent = `${routeIds.length} destinations`;
+        elements.multiSummaryLegs.textContent = `${legs.length} road legs`;
+        elements.multiSummaryDistance.textContent = `${totalDistance} km`;
+        elements.multiSummaryTime.textContent = formatDuration(totalMinutes);
+        elements.multiSummaryDays.textContent = days.label;
+        elements.multiSummaryComfort.textContent = comfort;
+        elements.multiWarnings.innerHTML = warnings.map(message => `<p><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><span>${escapeHtml(message)}</span></p>`).join('');
+        elements.multiWarnings.hidden = !warnings.length;
+        elements.multiLegList.innerHTML = legs.map((leg, index) => {
+            const from = destinations[leg.fromId];
+            const to = destinations[leg.toId];
+            const stops = multiCityRecommendedStops(leg.fallback, leg.fromId, leg.toId, leg.route.minutes, leg.type);
+            const stopsMarkup = stops.length
+                ? `<ul>${stops.map(stop => `<li><i class="fa-solid fa-location-dot" aria-hidden="true"></i><span><strong>${escapeHtml(stop.name)}</strong> - ${escapeHtml(stop.description)}</span></li>`).join('')}</ul>`
+                : '<p class="multi-city-no-stop">No planned stop is normally needed on this short leg. Pause if travellers need a comfort break.</p>';
+            const lengthClass = leg.route.minutes >= 480 ? ' is-very-long' : leg.route.minutes >= 360 ? ' is-long' : '';
+            return `<article class="multi-city-leg-card${lengthClass}"><header><span>Leg ${index + 1}</span><small>${escapeHtml(leg.type)}</small></header><h4>${escapeHtml(from.name)} <i class="fa-solid fa-arrow-right-long" aria-hidden="true"></i> ${escapeHtml(to.name)}</h4><div class="multi-city-leg-metrics"><span><i class="fa-solid fa-road" aria-hidden="true"></i><strong>${escapeHtml(`${leg.route.distance} km`)}</strong> Approx. distance</span><span><i class="fa-regular fa-clock" aria-hidden="true"></i><strong>${escapeHtml(formatDuration(leg.route.minutes))}</strong> Approx. drive time</span></div><section><h5>Recommended Stops</h5>${stopsMarkup}</section><p class="multi-city-road-note"><strong>Road Note:</strong> ${escapeHtml(multiCityRoadNote(leg.type, leg.route.minutes))}</p></article>`;
+        }).join('');
+
+        elements.popular.hidden = true;
+        elements.results.hidden = true;
+        elements.multiResults.hidden = false;
+        elements.multiResults.classList.remove('is-appearing');
+        window.requestAnimationFrame(() => elements.multiResults.classList.add('is-appearing'));
+        if (options.updateUrl !== false) updateMultiCityUrl(routeIds);
+
+        return { mode: 'multi', travelMode: 'Cab', routeIds: [...routeIds], routeNames, destinations: routeIds.length, legs: legs.length, distance: totalDistance, minutes: totalMinutes, days, comfort, warnings };
+    }
+
+    async function multiCityLeg(fromId, toId, options = {}) {
+        const fallback = shortestFallbackRoute(fromId, toId);
+        if (!fallback) throw new Error(`A planning route is not available between ${destinations[fromId].name} and ${destinations[toId].name}.`);
+        let route;
+        try {
+            if (options.preferFallback || forceFallbackRouting) throw new Error('Curated fallback requested');
+            route = await getRoadRoute(fromId, toId, fallback);
+        } catch {
+            route = { source: 'fallback', distance: fallback.distance, minutes: fallback.minutes, coordinates: fallback.coordinates };
+        }
+        return { fromId, toId, route, fallback, type: routeTypeFor(fromId, toId) };
+    }
+
+    async function showMultiCityRoute(routeIds, options = {}) {
+        const { scroll = true, preferFallback = false, updateUrl = true } = options;
+        validateMultiRouteIds(routeIds);
+        elements.message.textContent = 'Calculating each road leg for your multi-city cab journey...';
+        const legs = await Promise.all(routeIds.slice(0, -1).map((fromId, index) => multiCityLeg(fromId, routeIds[index + 1], { preferFallback })));
+        const fallbackCount = legs.filter(leg => leg.route.source === 'fallback').length;
+        elements.message.textContent = fallbackCount
+            ? `Cab route ready. ${fallbackCount} leg${fallbackCount === 1 ? '' : 's'} use curated approximate road data.`
+            : 'Multi-city cab route ready. Times include a planning buffer for Kerala conditions.';
+        drawMultiCityRoute(legs, routeIds);
+        const summary = renderMultiCityJourney(routeIds, legs, { updateUrl });
+        if (scroll) elements.multiResults.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+        return summary;
+    }
+
+    function multiCityFallbackSummary(routeIds) {
+        validateMultiRouteIds(routeIds);
+        const legs = routeIds.slice(0, -1).map((fromId, index) => {
+            const toId = routeIds[index + 1];
+            const fallback = shortestFallbackRoute(fromId, toId);
+            if (!fallback) throw new Error('A curated route is unavailable for one of these road legs.');
+            return { fromId, toId, route: { source: 'fallback', distance: fallback.distance, minutes: fallback.minutes, coordinates: fallback.coordinates }, fallback, type: routeTypeFor(fromId, toId) };
+        });
+        const comfort = multiCityComfort(legs);
+        return {
+            mode: 'multi',
+            travelMode: 'Cab',
+            routeIds: [...routeIds],
+            destinations: routeIds.length,
+            legs: legs.length,
+            distance: legs.reduce((sum, leg) => sum + leg.route.distance, 0),
+            minutes: legs.reduce((sum, leg) => sum + leg.route.minutes, 0),
+            days: multiCityRecommendedDays(routeIds, legs, comfort),
+            comfort,
+            warnings: multiCityWarnings(legs, comfort),
+            legDetails: legs.map(leg => ({ fromId: leg.fromId, toId: leg.toId, distance: leg.route.distance, minutes: leg.route.minutes, type: leg.type }))
+        };
     }
 
     function renderJourney(fromId, toId, route, fallback) {
@@ -908,6 +1103,7 @@
         elements.planLink.href = plan.url;
 
         elements.popular.hidden = true;
+        elements.multiResults.hidden = true;
         elements.results.hidden = false;
         elements.results.classList.remove('is-appearing');
         window.requestAnimationFrame(() => elements.results.classList.add('is-appearing'));
@@ -940,10 +1136,112 @@
 
         drawRoute(route.coordinates, fromId, toId);
         const summary = renderJourney(fromId, toId, route, fallback);
+        updatePointRouteUrl(fromId, toId);
         if (scroll) {
             elements.results.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
         }
         return summary;
+    }
+
+    function refreshMultiStopRows() {
+        const rows = [...elements.multiStopList.querySelectorAll('.multi-city-stop-row')];
+        rows.forEach((row, index) => {
+            const input = row.querySelector('input');
+            const label = row.querySelector('label');
+            label.textContent = `Stop ${index + 1}`;
+            input.setAttribute('aria-label', `Trip Stop ${index + 1}`);
+            row.querySelector('[data-stop-action="up"]').disabled = index === 0;
+            row.querySelector('[data-stop-action="down"]').disabled = index === rows.length - 1;
+            row.querySelector('[data-stop-action="up"]').setAttribute('aria-label', `Move Trip Stop ${index + 1} up`);
+            row.querySelector('[data-stop-action="down"]').setAttribute('aria-label', `Move Trip Stop ${index + 1} down`);
+            row.querySelector('[data-stop-action="remove"]').setAttribute('aria-label', `Remove Trip Stop ${index + 1}`);
+        });
+        elements.addStop.disabled = rows.length >= MAX_ROUTE_DESTINATIONS - 2;
+    }
+
+    function addMultiStop(value = '') {
+        const currentStops = elements.multiStopList.querySelectorAll('.multi-city-stop-row').length;
+        if (currentStops >= MAX_ROUTE_DESTINATIONS - 2) {
+            elements.message.textContent = 'Maximum number of trip stops reached.';
+            return null;
+        }
+        multiStopCounter += 1;
+        const row = document.createElement('div');
+        row.className = 'multi-city-stop-row';
+        row.innerHTML = `<label for="multi-city-stop-${multiStopCounter}">Stop ${currentStops + 1}</label><div class="route-input-wrap"><i class="fa-solid fa-location-dot" aria-hidden="true"></i><input id="multi-city-stop-${multiStopCounter}" type="search" list="kerala-destinations" placeholder="Choose an intermediate destination" autocomplete="off" value="${escapeHtml(value)}"></div><div class="multi-city-stop-actions"><button type="button" data-stop-action="up" title="Move stop up"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button><button type="button" data-stop-action="down" title="Move stop down"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button><button type="button" data-stop-action="remove" title="Remove stop"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>`;
+        elements.multiStopList.append(row);
+        refreshMultiStopRows();
+        return row.querySelector('input');
+    }
+
+    function selectedRouteInputs() {
+        return [elements.from, ...elements.multiStopList.querySelectorAll('input'), elements.to];
+    }
+
+    function rejectDuplicateDestination(changedInput) {
+        const selected = selectedRouteInputs()
+            .map(input => ({ input, id: findDestinationId(input.value) }))
+            .filter(entry => entry.id);
+        const duplicate = selected.find((entry, index) => selected.findIndex(candidate => candidate.id === entry.id) !== index);
+        if (!duplicate) return false;
+        if (changedInput && findDestinationId(changedInput.value) === duplicate.id) changedInput.value = '';
+        elements.message.textContent = 'This destination is already part of your route.';
+        changedInput?.focus();
+        return true;
+    }
+
+    function setRouteMode(mode, options = {}) {
+        currentRouteMode = mode === 'multi' ? 'multi' : 'point';
+        elements.modeInputs.forEach(input => { input.checked = input.value === currentRouteMode; });
+        const multiActive = currentRouteMode === 'multi';
+        elements.multiBuilder.hidden = !multiActive;
+        elements.routeFields.classList.toggle('is-multi', multiActive);
+        elements.swap.hidden = multiActive;
+        elements.plannerKicker.textContent = multiActive ? 'Multi-City Road Trip' : 'Point-to-Point Journey';
+        elements.plannerHeading.textContent = multiActive ? 'Build A Cab Route' : 'Choose Your Route';
+        elements.show.innerHTML = multiActive
+            ? '<i class="fa-solid fa-taxi" aria-hidden="true"></i> Show Cab Route'
+            : '<i class="fa-solid fa-route" aria-hidden="true"></i> Show Route';
+        if (multiActive && options.ensureStop !== false && !elements.multiStopList.children.length) addMultiStop();
+        if (!options.keepResults) {
+            elements.results.hidden = true;
+            elements.multiResults.hidden = true;
+            elements.popular.hidden = false;
+            clearRouteLayers();
+            if (map) map.fitBounds(allDestinationBounds, { padding: [34, 34] });
+        }
+        elements.message.textContent = multiActive
+            ? 'Multi-City routes use a cab for every road leg. Add at least one intermediate Trip Stop.'
+            : '';
+    }
+
+    function populateMultiCityBuilder(routeIds) {
+        elements.from.value = destinations[routeIds[0]].name;
+        elements.to.value = destinations[routeIds.at(-1)].name;
+        elements.multiStopList.innerHTML = '';
+        routeIds.slice(1, -1).forEach(id => addMultiStop(destinations[id].name));
+        refreshMultiStopRows();
+    }
+
+    function readMultiCityRoute() {
+        const inputs = selectedRouteInputs();
+        const routeIds = [];
+        for (const input of inputs) {
+            const id = findDestinationId(input.value);
+            if (!id) {
+                elements.message.textContent = input.value.trim()
+                    ? 'Choose every place from the supported destination list.'
+                    : 'Complete the origin, every Trip Stop and the final destination.';
+                input.focus();
+                return null;
+            }
+            routeIds.push(id);
+        }
+        if (new Set(routeIds).size !== routeIds.length) {
+            elements.message.textContent = 'This destination is already part of your route.';
+            return null;
+        }
+        return routeIds;
     }
 
     function clearRoute() {
@@ -951,10 +1249,17 @@
         elements.to.value = '';
         elements.message.textContent = '';
         elements.results.hidden = true;
+        elements.multiResults.hidden = true;
         elements.results.classList.remove('is-appearing');
+        elements.multiResults.classList.remove('is-appearing');
         elements.popular.hidden = false;
+        elements.multiStopList.innerHTML = '';
+        if (currentRouteMode === 'multi') addMultiStop();
         clearRouteLayers();
         if (map) map.fitBounds(allDestinationBounds, { padding: [34, 34] });
+        const url = new URL(window.location.href);
+        ['mode', 'route', 'from', 'to', 'plan'].forEach(parameter => url.searchParams.delete(parameter));
+        window.history.replaceState({}, '', `${url.pathname}${url.search ? `?${url.searchParams.toString()}` : ''}${url.hash}`);
     }
 
     function cacheElements() {
@@ -962,14 +1267,32 @@
             form: document.getElementById('route-planner'),
             from: document.getElementById('route-from'),
             to: document.getElementById('route-to'),
+            modeInputs: [...document.querySelectorAll('input[name="route-mode"]')],
+            routeFields: document.getElementById('route-fields'),
+            plannerKicker: document.getElementById('route-planner-kicker'),
+            plannerHeading: document.getElementById('route-planner-heading'),
             swap: document.getElementById('route-swap'),
+            show: document.querySelector('#route-planner .route-show'),
             clear: document.getElementById('route-clear'),
             message: document.getElementById('route-message'),
             datalist: document.getElementById('kerala-destinations'),
+            multiBuilder: document.getElementById('multi-city-builder'),
+            multiStopList: document.getElementById('multi-city-stop-list'),
+            addStop: document.getElementById('multi-city-add-stop'),
             mapLoading: document.getElementById('map-loading'),
             mapUnavailable: document.getElementById('map-unavailable'),
             popular: document.getElementById('popular-journeys'),
             results: document.getElementById('journey-results'),
+            multiResults: document.getElementById('multi-city-results'),
+            multiRouteLine: document.getElementById('multi-city-route-line'),
+            multiSummaryDestinations: document.getElementById('multi-summary-destinations'),
+            multiSummaryLegs: document.getElementById('multi-summary-legs'),
+            multiSummaryDistance: document.getElementById('multi-summary-distance'),
+            multiSummaryTime: document.getElementById('multi-summary-time'),
+            multiSummaryDays: document.getElementById('multi-summary-days'),
+            multiSummaryComfort: document.getElementById('multi-summary-comfort'),
+            multiWarnings: document.getElementById('multi-city-warnings'),
+            multiLegList: document.getElementById('multi-city-leg-list'),
             routeSource: document.getElementById('route-source'),
             summaryFrom: document.getElementById('summary-from'),
             summaryTo: document.getElementById('summary-to'),
@@ -999,8 +1322,33 @@
             .map(destination => `<option value="${escapeHtml(destination.name)}">${escapeHtml(destination.category)}</option>`)
             .join('');
 
+        const recalculateVisibleMultiRoute = async () => {
+            if (currentRouteMode !== 'multi' || elements.multiResults.hidden) return;
+            const routeIds = readMultiCityRoute();
+            if (!routeIds) {
+                elements.multiResults.hidden = true;
+                elements.popular.hidden = false;
+                return;
+            }
+            try {
+                await showMultiCityRoute(routeIds, { scroll: false });
+            } catch (error) {
+                elements.message.textContent = error.message;
+            }
+        };
+
         elements.form.addEventListener('submit', async event => {
             event.preventDefault();
+            if (currentRouteMode === 'multi') {
+                const routeIds = readMultiCityRoute();
+                if (!routeIds) return;
+                try {
+                    await showMultiCityRoute(routeIds);
+                } catch (error) {
+                    elements.message.textContent = error.message;
+                }
+                return;
+            }
             const fromId = findDestinationId(elements.from.value);
             const toId = findDestinationId(elements.to.value);
 
@@ -1022,6 +1370,46 @@
             }
         });
 
+        elements.modeInputs.forEach(input => {
+            input.addEventListener('change', () => setRouteMode(input.value));
+        });
+
+        elements.addStop.addEventListener('click', () => {
+            const input = addMultiStop();
+            if (input) {
+                elements.message.textContent = `Trip Stop added. ${selectedRouteInputs().length} of ${MAX_ROUTE_DESTINATIONS} possible destinations are in the builder.`;
+                elements.multiResults.hidden = true;
+                elements.popular.hidden = false;
+                input.focus();
+            }
+        });
+
+        elements.multiStopList.addEventListener('click', async event => {
+            const button = event.target.closest('[data-stop-action]');
+            if (!button) return;
+            const row = button.closest('.multi-city-stop-row');
+            if (button.dataset.stopAction === 'remove') {
+                row.remove();
+                refreshMultiStopRows();
+                elements.message.textContent = elements.multiStopList.children.length
+                    ? 'Trip Stop removed. Show the route again when every destination is complete.'
+                    : 'Add at least one intermediate Trip Stop for a Multi-City route.';
+                elements.multiResults.hidden = true;
+                elements.popular.hidden = false;
+                return;
+            }
+            if (button.dataset.stopAction === 'up' && row.previousElementSibling) row.parentElement.insertBefore(row, row.previousElementSibling);
+            if (button.dataset.stopAction === 'down' && row.nextElementSibling) row.parentElement.insertBefore(row.nextElementSibling, row);
+            refreshMultiStopRows();
+            elements.message.textContent = 'Trip Stop order changed. Route metrics are being recalculated.';
+            await recalculateVisibleMultiRoute();
+        });
+
+        elements.multiStopList.addEventListener('change', async event => {
+            if (!event.target.matches('input') || rejectDuplicateDestination(event.target)) return;
+            await recalculateVisibleMultiRoute();
+        });
+
         elements.swap.addEventListener('click', () => {
             const fromValue = elements.from.value;
             elements.from.value = elements.to.value;
@@ -1032,7 +1420,11 @@
         elements.clear.addEventListener('click', clearRoute);
 
         [elements.from, elements.to].forEach(input => {
-            input.addEventListener('change', () => {
+            input.addEventListener('change', async () => {
+                if (currentRouteMode === 'multi') {
+                    if (!rejectDuplicateDestination(input)) await recalculateVisibleMultiRoute();
+                    return;
+                }
                 const fromId = findDestinationId(elements.from.value);
                 const toId = findDestinationId(elements.to.value);
                 elements.message.textContent = fromId && toId && fromId === toId ? 'Starting point and destination must be different.' : '';
@@ -1043,6 +1435,7 @@
             button.addEventListener('click', async () => {
                 const fromId = button.dataset.routeFrom;
                 const toId = button.dataset.routeTo;
+                setRouteMode('point', { keepResults: true });
                 elements.from.value = destinations[fromId].name;
                 elements.to.value = destinations[toId].name;
                 try {
@@ -1056,6 +1449,19 @@
 
     async function initialiseFromQuery() {
         const parameters = new URLSearchParams(window.location.search);
+        if (parameters.get('mode') === 'multi' && parameters.get('route')) {
+            const routeIds = parameters.get('route').split(',').map(value => destinations[value] ? value : findDestinationId(value));
+            try {
+                validateMultiRouteIds(routeIds);
+                setRouteMode('multi', { ensureStop: false, keepResults: true });
+                populateMultiCityBuilder(routeIds);
+                await showMultiCityRoute(routeIds, { scroll: false, updateUrl: false });
+            } catch (error) {
+                setRouteMode('multi', { keepResults: true });
+                elements.message.textContent = error.message;
+            }
+            return;
+        }
         const fromId = findDestinationId(parameters.get('from'));
         const toId = findDestinationId(parameters.get('to'));
         const requestedPlan = plans.find(plan => plan.id === parameters.get('plan'));
@@ -1079,12 +1485,15 @@
     function initialise() {
         cacheElements();
         bindPlanner();
+        setRouteMode('point', { ensureStop: false, keepResults: true });
         initialiseMap();
 
         window.KeralaMapPlanner = {
             destinations,
             plans,
             showRoute,
+            showMultiCityRoute,
+            multiCityFallbackSummary,
             clearRoute,
             findDestinationId,
             shortestFallbackRoute,

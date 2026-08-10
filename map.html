@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="leaflet.css?v=1.9.4">
     <link rel="stylesheet" href="style.css?v=20260809-assistant1">
-    <link rel="stylesheet" href="map.css?v=20260809-transport2">
+    <link rel="stylesheet" href="map.css?v=20260810-multicity1">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%200%2064%2064%22><rect width=%2264%22 height=%2264%22 rx=%2210%22 fill=%22%23062217%22/><text x=%2232%22 y=%2246%22 font-size=%2246%22 text-anchor=%22middle%22 fill=%22%23c59d4b%22>%26</text></svg>">
 </head>
 <body id="top" class="map-page">
@@ -71,15 +71,29 @@
             <form class="route-planner reveal" id="route-planner" novalidate>
                 <div class="route-planner-heading">
                     <span class="route-planner-icon"><i class="fa-solid fa-route" aria-hidden="true"></i></span>
-                    <div><span>Road Journey</span><h2>Choose Your Route</h2></div>
+                    <div><span id="route-planner-kicker">Journey Planner</span><h2 id="route-planner-heading">Choose Your Route</h2></div>
                 </div>
-                <div class="route-fields">
+                <fieldset class="route-mode-switch" aria-label="Journey planning mode">
+                    <legend>Planning mode</legend>
+                    <label><input type="radio" name="route-mode" value="point" checked><span><i class="fa-solid fa-arrow-right-long" aria-hidden="true"></i><strong>Point-to-Point</strong><small>One origin and one destination</small></span></label>
+                    <label><input type="radio" name="route-mode" value="multi"><span><i class="fa-solid fa-route" aria-hidden="true"></i><strong>Multi-City</strong><small>Three to eight destinations by cab</small></span></label>
+                </fieldset>
+                <div class="route-fields" id="route-fields">
                     <label class="route-field" for="route-from">
                         <span>From</span>
                         <strong>Choose starting point</strong>
                         <div class="route-input-wrap"><i class="fa-solid fa-location-dot" aria-hidden="true"></i><input id="route-from" name="from" type="search" list="kerala-destinations" placeholder="Search destinations" autocomplete="off" required></div>
                     </label>
                     <button class="route-swap" id="route-swap" type="button" aria-label="Swap starting point and destination" title="Swap route"><i class="fa-solid fa-right-left" aria-hidden="true"></i></button>
+                    <section class="multi-city-builder" id="multi-city-builder" aria-labelledby="trip-stops-title" hidden>
+                        <div class="multi-city-builder-heading">
+                            <div><span>Multi-City Road Trip</span><h3 id="trip-stops-title">Trip Stops</h3></div>
+                            <span class="cab-only-badge"><i class="fa-solid fa-taxi" aria-hidden="true"></i> Cab only</span>
+                        </div>
+                        <p>These are destinations in your itinerary. Recommended rest and sightseeing stops are shown separately in the results.</p>
+                        <div class="multi-city-stop-list" id="multi-city-stop-list"></div>
+                        <button class="multi-city-add-stop" id="multi-city-add-stop" type="button"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add Stop</button>
+                    </section>
                     <label class="route-field" for="route-to">
                         <span>To</span>
                         <strong>Choose destination</strong>
@@ -93,6 +107,29 @@
                 </div>
                 <p class="route-message" id="route-message" role="status" aria-live="polite"></p>
             </form>
+        </div>
+    </section>
+
+    <section class="journey-results multi-city-results section-padding" id="multi-city-results" aria-labelledby="multi-city-results-title" hidden>
+        <div class="container">
+            <div class="journey-title-row multi-city-title-row">
+                <div><span class="subtitle">Multi-City Road Trip</span><h2 class="title left-title" id="multi-city-results-title">Cab Journey</h2><p class="multi-city-route-line" id="multi-city-route-line"></p></div>
+                <span class="route-source multi-city-cab-badge"><i class="fa-solid fa-taxi" aria-hidden="true"></i> Travel Mode: Cab</span>
+            </div>
+            <div class="journey-summary multi-city-summary" id="multi-city-summary">
+                <article><i class="fa-solid fa-location-dot" aria-hidden="true"></i><span>Destinations</span><strong id="multi-summary-destinations">-</strong></article>
+                <article><i class="fa-solid fa-road" aria-hidden="true"></i><span>Road legs</span><strong id="multi-summary-legs">-</strong></article>
+                <article><i class="fa-solid fa-route" aria-hidden="true"></i><span>Approx. total distance</span><strong id="multi-summary-distance">-</strong></article>
+                <article><i class="fa-regular fa-clock" aria-hidden="true"></i><span>Total driving time</span><strong id="multi-summary-time">-</strong></article>
+                <article><i class="fa-regular fa-calendar-check" aria-hidden="true"></i><span>Recommended duration</span><strong id="multi-summary-days">-</strong></article>
+                <article><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i><span>Route comfort</span><strong id="multi-summary-comfort">-</strong></article>
+            </div>
+            <p class="route-estimate-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> This is a multi-city cab itinerary. Distances and driving times are approximate and can change with traffic, weather, roadworks and breaks.</p>
+            <div class="multi-city-warning-list" id="multi-city-warnings" aria-live="polite"></div>
+            <section class="multi-city-legs" aria-labelledby="multi-city-legs-title">
+                <div class="journey-panel-heading"><span class="journey-panel-icon"><i class="fa-solid fa-road" aria-hidden="true"></i></span><div><span class="journey-label">Leg By Leg</span><h3 id="multi-city-legs-title">Your Road Journey</h3></div></div>
+                <div class="multi-city-leg-list" id="multi-city-leg-list"></div>
+            </section>
         </div>
     </section>
 
@@ -198,6 +235,6 @@
 
 <script src="leaflet.js?v=1.9.4"></script>
 <script src="script.js?v=20260809-assistant1"></script>
-<script src="map.js?v=20260809-transport3"></script>
+<script src="map.js?v=20260810-multicity1"></script>
 </body>
 </html>
