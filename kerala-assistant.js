@@ -2,6 +2,7 @@
     'use strict';
 
     const root = typeof window !== 'undefined' ? window : globalThis;
+    const ROUTE_CORE = root.KeralaRouteCore || (typeof module === 'object' && module.exports ? require('./route-planner-core.js') : null);
 
     const DESTINATIONS = {
         kochi: {
@@ -249,10 +250,10 @@
     const INTENT_PATTERNS = {
         help: /\b(help|what can you|what do you know|questions can i ask)\b/,
         recall: /\b(what did i tell|remember|earlier|what do you know about my trip)\b/,
-        live: /\b(tomorrow|right now|currently|current weather|raining now|open today|open now|running tomorrow|live price|current(?:\s+\w+){0,2}\s+price|availability today)\b/,
+        live: /\b(tomorrow|right now|currently|current weather|raining now|open today|open now|running tomorrow|live price|current(?:\s+\w+){0,2}\s+(?:price|fare)|availability today|traffic right now)\b/,
         comparison: /\b(vs|versus|compare|compared|or|which one|which is|better|cheaper|other one)\b/,
         budget: /\b(budget|cost|price|prices|money|how much|expensive|cheap|cheaper|cheapest|affordable|save money|reduce the cost|include flights|under\s+\d+|value|comfortable|premium)\b/,
-        transport: /\b(how do (i|we) get|how to get|travel from|travel between|how far|distance|train|flight|airport|bus|taxi|cab|hire a car|drive|backtracking|fly out|road|map link|show (?:it|this|the route) on (?:the )?map|open (?:it|this|the route) on (?:the )?map)\b/,
+        transport: /\b(how do (i|we) get|how to get|travel from|travel between|how far|distance|how long|how many (?:hours|km|kilometres|kilometers|road legs|legs)|travel time|stops? on (?:the )?way|recommended stops?|take breaks?|where should we stop|where should we take breaks|train|rail|flight|fly|airport|bus|taxi|cab|car|hire a car|drive|backtracking|fly out|road|what transport|how should i travel|why not (?:train|flight|car|cab)|which leg|longest (?:leg|drive)|route tiring|too tiring|comfortable for seniors|kids handle|map it|show (?:it|this|that|the route|this trip) on (?:the )?map|open (?:it|this|that|the route)(?: on (?:the )?map)?|map link|my route now)\b/,
         stay: /\b(hotel|hotels|stay|stays|resort|homestay|hostel|room|accommodation|houseboat stay)\b/,
         food: /\b(food|eat|breakfast|vegetarian|vegan|seafood|sadya|malabar|snack|spicy|allerg|cuisine|meal)\b/,
         culture: /\b(kathakali|kalaripayattu|theyyam|onam|vishu|thrissur pooram|boat race|temple etiquette|church|mosque|architecture|handicraft|spice|festival|culture)\b/,
@@ -300,8 +301,9 @@
         .trim();
 
     const freshContext = () => ({
-        version: 3,
+        version: 4,
         destinations: [],
+        activeRoute: [],
         currentDestination: null,
         duration: null,
         travellerType: null,
@@ -329,6 +331,7 @@
     const cleanContext = raw => {
         const clean = { ...freshContext(), ...(raw && typeof raw === 'object' ? raw : {}) };
         clean.destinations = Array.isArray(clean.destinations) ? clean.destinations.filter(id => DESTINATIONS[id]).slice(-8) : [];
+        clean.activeRoute = Array.isArray(clean.activeRoute) ? [...new Set(clean.activeRoute.filter(id => ROUTE_CORE?.destinations?.[id]))].slice(0, 8) : [];
         clean.interests = Array.isArray(clean.interests) ? [...new Set(clean.interests.filter(Boolean))].slice(0, 8) : [];
         clean.previousComparison = Array.isArray(clean.previousComparison) ? clean.previousComparison.filter(id => DESTINATIONS[id]).slice(0, 2) : [];
         if (!DESTINATIONS[clean.currentDestination]) clean.currentDestination = null;
@@ -443,6 +446,14 @@
         else if (/\b(bus|ksrtc)\b/.test(normalized)) transportPreference = 'bus';
         else if (/\b(car|taxi|cab|driver)\b/.test(normalized)) transportPreference = 'car';
 
+        const transportModes = [];
+        if (/\b(car|taxi|cab|driver)\b/.test(normalized)) transportModes.push(/\b(taxi|cab)\b/.test(normalized) ? (normalized.match(/\b(taxi|cab)\b/)?.[1] || 'car') : 'car');
+        if (/\b(train|rail)\b/.test(normalized)) transportModes.push('train');
+        if (/\b(flight|fly|flying)\b/.test(normalized)) transportModes.push('flight');
+        if (/\b(bus|ksrtc)\b/.test(normalized)) transportModes.push('bus');
+        const modeComparison = /\b(car|train|flight|bus|taxi|cab)\s+(?:or|vs|versus)\s+(car|train|flight|bus|taxi|cab)\b/.test(normalized);
+        const routeQuestion = destinations.length >= 2 && (/\b(from|to|between|route|travel|drive|road|map|fly|flight|train|car|cab)\b/.test(normalized) || destinations.length >= 3);
+
         let accommodationPreference = null;
         if (/\b(homestay|home stay)\b/.test(normalized)) accommodationPreference = 'homestay';
         else if (/\b(resort)\b/.test(normalized)) accommodationPreference = 'resort';
@@ -451,21 +462,35 @@
         else if (/\b(hotel)\b/.test(normalized)) accommodationPreference = 'hotel';
 
         const intents = Object.entries(INTENT_PATTERNS).filter(([, pattern]) => pattern.test(normalized)).map(([intent]) => intent);
+        if (modeComparison) {
+            const comparisonIndex = intents.indexOf('comparison');
+            if (comparisonIndex >= 0) intents.splice(comparisonIndex, 1);
+            if (!intents.includes('transport')) intents.push('transport');
+        }
         if (budget && !intents.includes('budget')) intents.push('budget');
         if (destinations.length >= 2 && /\bto\b|\bhow\b/.test(normalized) && !/\b(or|vs|versus|compare)\b/.test(normalized) && !intents.includes('transport')) intents.push('transport');
         if ((pace || /\bhate long drives\b/.test(normalized)) && !intents.includes('plan')) intents.push('plan');
         if (monthKey && !intents.includes('weather')) intents.push('weather');
         if (destinations.length && !intents.length) intents.push('destination');
-        if (destinations.length >= 2 && /\b(or|vs|versus|compare|better|cheaper|which)\b/.test(normalized) && !intents.includes('comparison')) intents.push('comparison');
+        if (!modeComparison && destinations.length >= 2 && /\b(or|vs|versus|compare|better|cheaper|which)\b/.test(normalized) && !intents.includes('comparison')) intents.push('comparison');
         if (!intents.length && /\b(hi|hello|hey|namaste|bro|brother)\b/.test(normalized)) intents.push('help');
 
-        return { normalized, destinations, duration, budget, month: monthKey || null, adults, children, seniors, infants, familySize, totalTravellers, travellerType, interests, pace, transportPreference, accommodationPreference, intents, referencesThere, referencesOther };
+        return { normalized, destinations, duration, budget, month: monthKey || null, adults, children, seniors, infants, familySize, totalTravellers, travellerType, interests, pace, transportPreference, transportModes, modeComparison, routeQuestion, accommodationPreference, intents, referencesThere, referencesOther };
     };
 
     const mergeEntitiesIntoContext = (rawContext, entities) => {
         const context = cleanContext(rawContext);
         const removingDestination = /\b(remove|skip|drop)\b/.test(entities.normalized);
         const addingDestination = /\b(add|include)\b/.test(entities.normalized);
+        const routeDestinations = entities.destinations.filter(id => ROUTE_CORE?.destinations?.[id]);
+
+        if (removingDestination && routeDestinations.length && context.activeRoute.length) {
+            context.activeRoute = context.activeRoute.filter(id => !routeDestinations.includes(id));
+        } else if (addingDestination && routeDestinations.length && context.activeRoute.length >= 2) {
+            context.activeRoute = [...new Set([...context.activeRoute, ...routeDestinations])].slice(0, 8);
+        } else if (routeDestinations.length >= 2 && (entities.routeQuestion || entities.intents.includes('transport') || routeDestinations.length >= 3)) {
+            context.activeRoute = [...new Set(routeDestinations)].slice(0, 8);
+        }
 
         if (entities.destinations.length) {
             if (removingDestination) {
@@ -507,16 +532,45 @@
     const formatList = items => items.length < 2 ? (items[0] || '') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
     const formatMoney = value => `₹${Number(value).toLocaleString('en-IN')}`;
     const mapLink = ids => {
-        const valid = [...new Set(ids.filter(id => DESTINATIONS[id]))];
+        const valid = [...new Set(ids.filter(id => ROUTE_CORE?.destinations?.[id]))];
         if (valid.length > 2) {
             const route = valid.map(id => encodeURIComponent(id)).join(',');
             return [`map.html?mode=multi&route=${route}`, 'Open this multi-city road trip on the map'];
         }
         return valid.length === 2
-            ? [`map.html?from=${encodeURIComponent(DESTINATIONS[valid[0]].name)}&to=${encodeURIComponent(DESTINATIONS[valid[1]].name)}`, 'Open this route on the map']
+            ? [`map.html?from=${encodeURIComponent(ROUTE_CORE.destinations[valid[0]].name)}&to=${encodeURIComponent(ROUTE_CORE.destinations[valid[1]].name)}`, 'Open this route on the map']
             : ['map.html', 'Open the Kerala journey planner'];
     };
     const result = (id, text, link = null, related = DEFAULT_SUGGESTIONS, audio = null) => ({ id, text, link, related, audio });
+
+    const routeNames = ids => ids.map(id => ROUTE_CORE?.destinations?.[id]?.name || DESTINATIONS[id]?.name).filter(Boolean);
+    const routeLine = ids => routeNames(ids).join(' → ');
+    const modeName = mode => ({ taxi: 'Car', cab: 'Car', car: 'Car', train: 'Train', flight: 'Flight', bus: 'Bus' }[mode] || mode);
+    const flightUnavailableReason = reason => ({
+        'same-airport-region': 'Both places use the same practical airport region, so flying would not remove the road transfer.',
+        'airports-too-close': 'Airport check-in and transfers would take longer than the time saved.',
+        'rail-more-direct': 'Rail is more direct once airport transfers and check-in time are included.'
+    }[reason] || 'No practical airport pairing meaningfully reduces this journey.');
+
+    const describePointMode = (mode, summary) => {
+        const name = modeName(mode);
+        const { route, recommendation } = summary;
+        if (name === 'Car') {
+            const warning = route.minutes >= 360 ? ' It is a long driving day, so plan breaks or divide the journey.' : '';
+            return `Car is practical for this ${route.distance} km route and takes approximately ${ROUTE_CORE.formatDuration(route.minutes)} by road.${warning}`;
+        }
+        if (name === 'Train') {
+            if (!recommendation.rail.available) return 'Train is not practical because one or both places need a substantial road transfer to reach a useful railway station.';
+            const transfer = recommendation.rail.requiresRoadTransfer ? ' Local road transfers are still required at one or both ends.' : '';
+            return `Train is practical via ${recommendation.rail.fromStation} to ${recommendation.rail.toStation}, subject to current services.${transfer}`;
+        }
+        if (name === 'Flight') {
+            if (!recommendation.flight.available) return `Flight is not practical here. ${flightUnavailableReason(recommendation.flight.reason)}`;
+            return `Flight is practical via ${recommendation.flight.fromCode} to ${recommendation.flight.toCode}, followed by road transfers where required. Approximate door-to-door planning time is ${ROUTE_CORE.formatDuration(recommendation.approximateMinutes)}; verify current operations and fares.`;
+        }
+        if (name === 'Bus') return `A bus may cover part or all of this road route, but this static guide does not verify live services. Compare the ${route.distance} km road journey in the planner and confirm the current operator and connections.`;
+        return '';
+    };
 
     const monthAdvice = (monthKey, destination) => {
         const month = MONTHS[monthKey];
@@ -546,6 +600,7 @@
         const group = groupSummary(context);
         if (group) remembered.push(group);
         if (context.destinations.length) remembered.push(`places: ${formatList(destinationNames(context.destinations))}`);
+        if (context.activeRoute.length >= 2) remembered.push(`active route: ${routeLine(context.activeRoute)}`);
         if (context.interests.length) remembered.push(`interests: ${formatList(context.interests)}`);
         if (context.month) remembered.push(`travel month: ${MONTHS[context.month].name}`);
         if (context.budget) remembered.push(`planning ceiling: ${formatMoney(context.budget)}`);
@@ -759,30 +814,88 @@
     };
 
     const buildTransportReply = (entities, context) => {
-        const requestsMap = /\b(map link|show (?:it|this|the route) on (?:the )?map|open (?:it|this|the route) on (?:the )?map)\b/.test(entities.normalized);
-        let ids = entities.destinations.slice();
-        if (ids.length < 2 && context.destinations.length >= 2) ids = requestsMap ? context.destinations.slice() : context.destinations.slice(-2);
-        if (ids.length >= 2) {
-            if (requestsMap && ids.length > 2) {
-                return result('transport-multi-route', `Open the selected ${ids.length}-destination route as a multi-city cab journey: ${formatList(destinationNames(ids))}. The map will show each road leg, approximate totals and recommended breaks.`, mapLink(ids), ['hotels', 'safety', 'choose-plan']);
+        const text = entities.normalized;
+        const requestsMap = /\b(map it|map link|show (?:it|this|that|the route|this trip) on (?:the )?map|open (?:it|this|that|the route)|show this trip)\b/.test(text);
+        const asksDistance = /\b(how far|distance|how many (?:km|kilometres|kilometers))\b/.test(text);
+        const asksTime = /\b(how long|travel time|how many hours|long is the drive|does it take)\b/.test(text);
+        const asksStops = /\b(stops? on the way|recommended stops?|where should we stop|where should we take breaks|take breaks|breaks? on (?:the|this) (?:way|trip)|any breaks)\b/.test(text);
+        const asksLegs = /\b(how many (?:road )?legs|road leg count)\b/.test(text);
+        const asksLongest = /\b(which leg|longest (?:leg|drive))\b/.test(text);
+        const asksComfort = /\b(tiring|comfortable for seniors|seniors?|kids handle|children handle|family handle)\b/.test(text);
+        const asksRoute = /\b(my route|route now|what is (?:the|my) route)\b/.test(text);
+        const asksWhyNot = text.match(/\bwhy not (train|flight|car|cab)\b/)?.[1] || null;
+        const ids = context.activeRoute.length >= 2 ? context.activeRoute.slice() : entities.destinations.filter(id => ROUTE_CORE?.destinations?.[id]);
+
+        if (ids.length >= 3) {
+            const multi = ROUTE_CORE.multiSummary(ids);
+            if (!multi) return result('transport-unavailable', 'The stored planner data cannot calculate every leg reliably. Open the Journey Planner and adjust the route.', mapLink(ids), ['transport', 'safety']);
+            const link = mapLink(ids);
+            const longest = multi.longestLeg;
+            const longestText = `${ROUTE_CORE.destinations[longest.fromId].name} → ${ROUTE_CORE.destinations[longest.toId].name} at approximately ${longest.route.distance} km / ${ROUTE_CORE.formatDuration(longest.route.minutes)}`;
+            const warning = multi.warnings.length ? ` ${multi.warnings[0]}` : '';
+
+            if (requestsMap) return result('transport-multi-map', `Opening your ${multi.destinations}-destination multi-city cab route: ${routeLine(ids)}.`, link, ['transport', 'safety']);
+            if (asksLegs) return result('transport-multi-legs', `Your route has ${multi.destinations} destinations and ${multi.roadLegs} road legs. Travel mode remains Cab across the full multi-city trip.`, link, ['transport', 'safety']);
+            if (asksLongest) return result('transport-multi-longest', `The longest leg is ${longestText}.${warning}`, link, ['transport', 'safety']);
+            if (asksStops) {
+                const usefulLegs = [...multi.legs].sort((a, b) => b.route.minutes - a.route.minutes).filter(leg => leg.stops.length).slice(0, 3);
+                const stops = usefulLegs.map(leg => `${ROUTE_CORE.destinations[leg.fromId].name} → ${ROUTE_CORE.destinations[leg.toId].name}: ${leg.stops.map(stop => stop.name).join(', ')}`).join('; ');
+                return result('transport-multi-stops', `Prioritise breaks on the longer legs: ${stops || 'pause for a clean meal, fuel and restroom break where needed'}.${warning}`, link, ['transport', 'safety']);
             }
+            if (asksComfort) {
+                const audience = /\b(senior|seniors)\b/.test(text) || context.travellerType === 'senior' ? ' For senior travellers, keep sightseeing light after that transfer and add a rest day if needed.' : /\b(kids?|children|family)\b/.test(text) || context.travellerType === 'family' ? ' For families, schedule comfort breaks and avoid major sightseeing after that transfer.' : '';
+                return result('transport-multi-comfort', `This is a ${multi.comfort.toLowerCase()} route with ${multi.roadLegs} road legs and about ${ROUTE_CORE.formatDuration(multi.minutes)} of total driving. The longest leg is ${longestText}.${audience}${warning}`, link, ['transport', 'safety']);
+            }
+            if (asksWhyNot || entities.transportModes.some(mode => ['train', 'flight'].includes(mode)) || /\bwhat transport|how should (?:i|we) travel|train or cab|should i fly\b/.test(text)) {
+                const requested = asksWhyNot || entities.transportModes.find(mode => ['train', 'flight'].includes(mode));
+                const explanation = requested ? ` ${modeName(requested)} is not used because changing modes between selected trip stops would break this planner's continuous road-trip structure.` : '';
+                return result('transport-multi-cab', `This is a Multi-City road trip, so the Journey Planner uses Cab only across all ${multi.roadLegs} legs.${explanation} The route totals approximately ${multi.distance} km and ${ROUTE_CORE.formatDuration(multi.minutes)} of driving.${warning}`, link, ['transport', 'safety']);
+            }
+            if (asksRoute) return result('transport-multi-route', `Your current route is ${routeLine(ids)}: ${multi.destinations} destinations, ${multi.roadLegs} road legs and Cab only.`, link, ['transport', 'safety']);
+            return result('transport-multi-route', `${routeLine(ids)} is a Multi-City cab road trip with ${multi.roadLegs} legs, approximately ${multi.distance} km and ${ROUTE_CORE.formatDuration(multi.minutes)} of driving.${warning}`, link, ['transport', 'safety']);
+        }
+
+        if (ids.length === 2) {
             const [fromId, toId] = ids;
-            const from = DESTINATIONS[fromId];
-            const to = DESTINATIONS[toId];
-            let mode = 'Use the journey planner to compare the practical road, rail and air options.';
-            const remote = ['munnar', 'thekkady', 'wayanad', 'vagamon', 'idukki', 'athirappilly'];
-            if (remote.includes(fromId) && remote.includes(toId)) mode = 'A private car or taxi is normally the practical choice because both ends need substantial road access.';
-            else if (fromId === 'kochi' && toId === 'munnar') mode = 'Use a car, taxi or suitable bus; Munnar has no rail station, so every option ends with a hill-road transfer.';
-            else if ((fromId === 'alappuzha' && toId === 'varkala') || (fromId === 'kochi' && toId === 'varkala')) mode = 'Train is often the more comfortable alternative to a long road transfer when the timing suits.';
-            else if (!remote.includes(fromId) && !remote.includes(toId)) mode = 'Rail can reduce road travel where the nearby stations align, with short transfers at each end.';
-            return result('transport-route', `${from.name} to ${to.name}: ${mode} Times and services are not live, so check the route planner and verify the final train, flight or road details before travel.`, mapLink([fromId, toId]), ['hotels', 'safety', 'choose-plan']);
+            const summary = ROUTE_CORE.pointSummary(fromId, toId);
+            if (!summary) return result('transport-unavailable', 'The Journey Planner has no reliable stored estimate for that route. Open the map to choose another supported pair.', mapLink(ids), ['transport', 'choose-plan']);
+            const fromName = ROUTE_CORE.destinations[fromId].name;
+            const toName = ROUTE_CORE.destinations[toId].name;
+            const link = mapLink(ids);
+            if (requestsMap) return result('transport-map', `Opening ${fromName} → ${toName} in the Journey Planner.`, link, ['transport', 'safety']);
+            if (asksDistance) return result('transport-distance', `${fromName} to ${toName} is approximately ${summary.route.distance} km by road. This is a stored planning estimate, not live traffic data.`, link, ['transport', 'safety']);
+            if (asksTime) return result('transport-time', `${fromName} to ${toName} takes approximately ${ROUTE_CORE.formatDuration(summary.route.minutes)} by road under the planner's estimate. Traffic, weather and stops can change it.`, link, ['transport', 'safety']);
+            if (asksStops) {
+                const stopNames = summary.stops.map(stop => stop.name);
+                return result('transport-stops', stopNames.length ? `Recommended stops between ${fromName} and ${toName}: ${formatList(stopNames)}. These are the same optional breaks shown by the Journey Planner.` : `This short route normally needs no planned stop; take a comfort break if your group needs one.`, link, ['transport', 'safety']);
+            }
+            if (asksComfort) {
+                const long = summary.route.minutes >= 360;
+                const audience = /\b(senior|seniors)\b/.test(text) || context.travellerType === 'senior' ? 'For seniors' : /\b(kids?|children|family)\b/.test(text) || context.travellerType === 'family' ? 'For families' : 'For most travellers';
+                return result('transport-comfort', `${audience}, this ${ROUTE_CORE.formatDuration(summary.route.minutes)} road transfer is ${long ? 'demanding' : 'generally manageable'}${summary.stops.length ? ` with a break around ${summary.stops[0].name}` : ''}. ${long ? 'Consider dividing the journey or keeping the rest of the day light.' : 'Allow extra time for traffic, meals and comfort stops.'}`, link, ['transport', 'safety']);
+            }
+            const comparedModes = [...new Set(entities.transportModes.map(modeName))];
+            if (entities.modeComparison && comparedModes.length >= 2) {
+                const details = comparedModes.slice(0, 2).map(mode => `${mode}: ${describePointMode(mode, summary)}`).join(' ');
+                return result('transport-mode-comparison', `${details} The planner's overall recommendation is ${summary.recommendation.mode} for this route.`, link, ['transport', 'safety']);
+            }
+            if (comparedModes.length === 1 || asksWhyNot) {
+                const requested = modeName(asksWhyNot || comparedModes[0]);
+                return result('transport-mode', `${fromName} → ${toName}: ${describePointMode(requested, summary)} The planner's overall recommendation is ${summary.recommendation.mode}.`, link, ['transport', 'safety']);
+            }
+            return result('transport-route', `${fromName} → ${toName}: the Journey Planner recommends ${summary.recommendation.mode}. Road distance is approximately ${summary.route.distance} km and road time is ${ROUTE_CORE.formatDuration(summary.route.minutes)}. ${summary.recommendation.reason}`, link, ['hotels', 'safety', 'choose-plan']);
         }
-        const id = ids[0] || context.currentDestination;
-        if (id) {
-            const destination = DESTINATIONS[id];
-            return result('transport-access', `${destination.name}: ${destination.access} Tell me your starting place for a more useful comparison, or open the map for approximate route planning.`, ['map.html', 'Open the Kerala journey planner'], ['transport', 'choose-plan']);
+
+        const id = entities.destinations.find(destinationId => ROUTE_CORE?.destinations?.[destinationId]) || (ROUTE_CORE?.destinations?.[context.currentDestination] ? context.currentDestination : null);
+        const requestedMode = entities.transportModes[0] ? modeName(entities.transportModes[0]) : null;
+        if (id && requestedMode) {
+            const access = ROUTE_CORE.transportAccess[id];
+            const name = ROUTE_CORE.destinations[id].name;
+            if (requestedMode === 'Flight') return result('transport-access-flight', `${name} has no airport of its own. The practical airport is ${access.airport}, followed by an approximate ${ROUTE_CORE.formatDuration(access.airportTransfer)} road transfer; tell me your starting place to judge whether flying helps.`, ['map.html', 'Open the Journey Planner'], ['transport', 'choose-plan']);
+            if (requestedMode === 'Train') return result('transport-access-train', `${name} has ${access.railTransfer > 90 ? 'no nearby practical railway access' : `rail access via ${access.rail}`}. ${access.railTransfer > 90 ? `The planner allows about ${ROUTE_CORE.formatDuration(access.railTransfer)} for the road transfer to ${access.rail}.` : 'Tell me your starting place to compare the complete journey.'}`, ['map.html', 'Open the Journey Planner'], ['transport', 'choose-plan']);
         }
-        return result('transport-clarify', 'Tell me both places, for example “Kochi to Munnar”. I can explain the practical mode and open the existing route planner without inventing live schedules.', ['map.html', 'Open the Kerala journey planner'], ['transport', 'choose-plan']);
+        if (id) return result('transport-access', `${DESTINATIONS[id].name}: ${DESTINATIONS[id].access} Tell me your starting place for a route estimate.`, ['map.html', 'Open the Kerala Journey Planner'], ['transport', 'choose-plan']);
+        return result('transport-clarify', 'Tell me both places, for example “Kochi to Munnar”. I can use the Journey Planner’s stored distance, time, stops and mode logic.', ['map.html', 'Open the Kerala Journey Planner'], ['transport', 'choose-plan']);
     };
 
     const buildWeatherReply = (entities, context) => {
@@ -874,10 +987,11 @@
         else if (entities.intents.includes('comparison') && (entities.destinations.length >= 2 || context.previousComparison.length >= 2)) reply = buildComparisonReply(entities, context);
         else if (previous.previousTopic === 'comparison' && context.previousComparison.length === 2 && /\b(monsson|monsoon|during rain|during july|which|cheaper|better|easier)\b/.test(entities.normalized)) reply = buildComparisonReply(entities, context);
         else if (/^why\b/.test(entities.normalized) && context.lastComparisonReason) reply = result('comparison-why', context.lastComparisonReason, mapLink(context.previousComparison), ['transport', 'hotels']);
+        else if (/\b(add|include|remove|skip|drop)\b/.test(entities.normalized) && previous.activeRoute.length >= 2) reply = buildTransportReply(entities, context);
         else if (entities.intents.includes('stay')) reply = buildStayReply(entities, context);
         else if (previous.previousTopic === 'stay' && context.currentDestination && (/\b(how much|cheap|cheaper|affordable)\b/.test(entities.normalized) || /\bwhat about\b.*\b(family|senior|kids?|children)\b/.test(entities.normalized))) reply = buildStayReply(entities, context);
+        else if (entities.intents.includes('transport') && (!entities.intents.includes('budget') || context.activeRoute.length >= 2)) reply = buildTransportReply(entities, context);
         else if (entities.intents.includes('budget')) reply = buildBudgetReply(entities, context);
-        else if (entities.intents.includes('transport')) reply = buildTransportReply(entities, context);
         else if (entities.intents.includes('weather')) reply = buildWeatherReply(entities, context);
         else if (entities.intents.includes('stay') || (previous.previousTopic === 'stay' && /\b(which|what|cheaper|family|senior)\b/.test(entities.normalized))) reply = buildStayReply(entities, context);
         else if (entities.intents.includes('food') || (previous.previousTopic === 'food' && entities.referencesThere)) reply = buildFoodReply(entities, context);
@@ -915,6 +1029,7 @@
         destinations: DESTINATIONS,
         plans: PLANS,
         phrases: PHRASES,
+        routeCore: ROUTE_CORE,
         supportedIntents: Object.keys(INTENT_PATTERNS),
         createContext: freshContext,
         extract: extractEntities,

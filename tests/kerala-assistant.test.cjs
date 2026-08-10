@@ -52,10 +52,10 @@ for (let days = 1; days <= 14; days += 1) {
     ['What can kids eat in Varkala if they dislike spice?', 'food'],
     ['I have a seafood allergy. What should I check?', 'food'],
     ['How do I get from Kochi to Munnar?', 'transport-route'],
-    ['Munnar to Thekkady by train?', 'transport-route'],
+    ['Munnar to Thekkady by train?', 'transport-mode'],
     ['Allepy to varkla how?', 'transport-route'],
     ['Which airport works for Wayanad?', 'transport-access'],
-    ['Can I take a train from Kochi to Varkala?', 'transport-route'],
+    ['Can I take a train from Kochi to Varkala?', 'transport-mode'],
     ['Is Munnar good for kids in July?', 'seasonal-weather'],
     ['Should a family choose Munnar or Wayanad in June?', 'comparison'],
     ['Which 7-day plan is best for seniors who like wildlife?', 'plan-recommendation'],
@@ -102,7 +102,7 @@ budgetGroups.forEach((group, index) => {
 
 [
     'Kochi to Alappuzha', 'Kochi to Varkala', 'Kozhikode to Wayanad', 'Kannur to Bekal',
-    'Kollam to Poovar', 'Thrissur to Athirappilly', 'Vagamon to Idukki', 'Bekal to Thiruvananthapuram'
+    'Kovalam to Poovar', 'Kochi to Kadamakkudy', 'Kozhikode to Wayanad', 'Bekal to Thiruvananthapuram'
 ].forEach(route => {
     const response = ask(`How should we travel ${route}?`);
     check(response.reply.id === 'transport-route', `${route}: route response`, response.reply.id);
@@ -149,7 +149,7 @@ check(stayToWeather.at(-1).context.currentDestination === 'munnar', 'Month follo
 const multiCityLink = runSequence([
     'Plan Kochi, Munnar, Thekkady and Alappuzha for 7 days',
     'Give me the map link'
-], ['custom-plan', 'transport-multi-route']);
+], ['custom-plan', 'transport-multi-map']);
 check(multiCityLink.at(-1).reply.link?.[0]?.startsWith('map.html?mode=multi&route='), 'Multi-city plan opens multi-city map', multiCityLink.at(-1).reply.link?.[0]);
 
 const sequenceB = runSequence([

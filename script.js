@@ -1159,13 +1159,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 7. Floating Kerala Travel Assistant
     // ==========================================
-    const assistantEngineScript = document.createElement('script');
-    assistantEngineScript.src = 'kerala-assistant.js?v=20260810-qa1';
-    assistantEngineScript.dataset.keralaAssistantEngine = 'true';
-    assistantEngineScript.addEventListener('error', () => {
-        console.error('The local Kerala Travel Guide could not be loaded.');
-    });
-    document.body.append(assistantEngineScript);
+    const loadAssistantEngine = () => {
+        if (window.KeralaAssistantEngine || document.querySelector('[data-kerala-assistant-engine]')) return;
+        const assistantEngineScript = document.createElement('script');
+        assistantEngineScript.src = 'kerala-assistant.js?v=20260810-routeqa1';
+        assistantEngineScript.dataset.keralaAssistantEngine = 'true';
+        assistantEngineScript.addEventListener('error', () => {
+            console.error('The local Kerala Travel Guide could not be loaded.');
+        });
+        document.body.append(assistantEngineScript);
+    };
+
+    if (window.KeralaRouteCore) loadAssistantEngine();
+    else {
+        const routeCoreScript = document.createElement('script');
+        routeCoreScript.src = 'route-planner-core.js?v=20260810-routeqa1';
+        routeCoreScript.dataset.keralaRouteCore = 'true';
+        routeCoreScript.addEventListener('load', loadAssistantEngine, { once: true });
+        routeCoreScript.addEventListener('error', () => console.error('The shared Kerala route planner could not be loaded.'));
+        document.body.append(routeCoreScript);
+    }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
