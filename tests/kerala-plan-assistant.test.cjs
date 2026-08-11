@@ -62,7 +62,7 @@ check(comparisonFollowUp[2].context.planComparisonWinner === 'seven-day', 'Beach
     ['Which plan has a houseboat?', '3-Day Kochi'],
     ['Which plan includes Varkala?', '7-Day Classic'],
     ['Which plan includes Wayanad?', '10-Day Kerala'],
-    ['Which plan has the least driving?', 'Easy-Paced Senior'],
+    ['Which plan has the least driving?', '3-Day Kochi'],
     ['Which plan is the most relaxed?', 'Easy-Paced Senior'],
     ['Which plan has the most offbeat places?', '10-Day Kerala'],
     ['Which plan has the fewest hotel changes?', '3-Day Kochi']
@@ -113,7 +113,7 @@ check(fiveDayQuestions[5].reply.text.includes('Day 2'), 'Munnar day found', five
     ['Where do we stay each night in the 5-day plan?', 'Kochi: 1 night'],
     ['How many nights in Munnar in the 7-day plan?', '2 nights'],
     ['Do we sleep on the houseboat in the 5-day plan?', 'Yes.'],
-    ['How many hotel changes are in the senior plan?', '1 hotel or stay changes'],
+    ['How many hotel changes are in the senior plan?', '2 hotel or stay changes'],
     ['Where do students stay?', 'Hostel age']
 ].forEach(([question, phrase]) => check(ask(question).reply.text.includes(phrase), `${question}: overnight reasoning`));
 
@@ -122,7 +122,7 @@ check(fiveDayQuestions[5].reply.text.includes('Day 2'), 'Munnar day found', five
     ['Why is Munroe Island included in the 7-day plan?', 'small-canal canoe'],
     ['Why does the senior plan not include Munnar?', 'winding hill roads'],
     ['Why is the student plan cheaper?', 'shared transport'],
-    ['Why is the 10-day plan more tiring?', 'Thekkady to Wayanad']
+    ['Why is the 10-day plan more tiring?', 'overnight northbound rail']
 ].forEach(([question, phrase]) => check(ask(question).reply.text.includes(phrase), `${question}: plan reason`));
 
 const memoryFive = sequence(['Give me the 5-day plan.', 'What happens on Day 3?', 'Where do we stay?', 'Does it include a houseboat?']);
@@ -131,12 +131,12 @@ check(memoryFive[1].reply.text.includes('Thekkady'), 'Plan memory gives correct 
 
 const durationSwitch = sequence(['Give me the 10-day plan.', 'Actually make it 7 days.']);
 check(durationSwitch[1].context.activePlanId === 'seven-day', 'Duration switch selects published 7-day plan', durationSwitch[1].context.activePlanId);
-check(durationSwitch[1].context.activeRoute.join(',') === 'kochi,kadamakkudy,munnar,thekkady,munroe-island,varkala', 'Duration switch clears stale 10-day route', durationSwitch[1].context.activeRoute.join(','));
+check(durationSwitch[1].context.activeRoute.join(',') === 'kochi,kadamakkudy,munnar,thekkady,munroe-island,varkala,thiruvananthapuram', 'Duration switch clears stale 10-day route', durationSwitch[1].context.activeRoute.join(','));
 
 const studentMap = sequence(['Give me the student plan.', 'Map it.']);
 check(studentMap[1].reply.link?.[0] === 'map.html?mode=multi&route=kochi,munnar,alappuzha', 'Student plan map handoff', studentMap[1].reply.link?.[0]);
 const seniorMap = sequence(['Show me the senior plan.', 'Show the route on the map.']);
-check(seniorMap[1].reply.link?.[0] === 'map.html?from=Kochi&to=Kumarakom', 'Senior plan map handoff', seniorMap[1].reply.link?.[0]);
+check(seniorMap[1].reply.link?.[0] === 'map.html?mode=multi&route=kochi,kumarakom,thiruvananthapuram', 'Senior plan map handoff', seniorMap[1].reply.link?.[0]);
 
 const modified = sequence(['Give me the 5-day plan.', 'Remove Thekkady.', 'Add Varkala.', 'Show it on the map.']);
 check(modified[1].context.routeSource === 'custom-user-route' && !modified[1].context.activeRoute.includes('thekkady'), 'Published plan becomes custom after removal');
@@ -162,7 +162,7 @@ check(modified[3].reply.link?.[0] === 'map.html?mode=multi&route=kochi,munnar,al
 });
 const school = ask('We are school students and have 5 days.');
 check(/minor|supervised|18\+/.test(school.reply.text), 'School students receive accommodation warning', school.reply.text);
-check(ask('We have grandparents and kids.').reply.text.includes('gentle'), 'Multigenerational route is useful immediately');
+check(ask('We have grandparents and kids.').reply.text.includes('easy-paced'), 'Multigenerational route is useful immediately');
 
 [
     ['We have 7 days and want beaches.', 'seven-day'],
@@ -181,17 +181,33 @@ check(ask("Give me the 5-day plan without a houseboat.").reply.text.includes('la
 
 [
     ['Show the 5-day plan on the map.', 'map.html?mode=multi&route=kochi,munnar,thekkady,alappuzha'],
-    ['Map the 7-day itinerary.', 'map.html?mode=multi&route=kochi,kadamakkudy,munnar,thekkady,munroe-island,varkala'],
-    ['Show the 10-day route on the map.', 'map.html?mode=multi&route=kochi,kadamakkudy,munroe-island,munnar,thekkady,wayanad,valiyaparamba,bekal'],
-    ['Map the senior plan.', 'map.html?from=Kochi&to=Kumarakom'],
+    ['Map the 7-day itinerary.', 'map.html?mode=multi&route=kochi,kadamakkudy,munnar,thekkady,munroe-island,varkala,thiruvananthapuram'],
+    ['Show the 10-day route on the map.', 'map.html?mode=multi&route=kochi,kadamakkudy,munnar,thekkady,munroe-island,thiruvananthapuram,wayanad,valiyaparamba,bekal'],
+    ['Map the senior plan.', 'map.html?mode=multi&route=kochi,kumarakom,thiruvananthapuram'],
     ['Map the student plan.', 'map.html?mode=multi&route=kochi,munnar,alappuzha'],
     ['Show Munnar to Thekkady on the map.', 'map.html?from=Munnar&to=Thekkady'],
     ['Show the first half of the 7-day route on the map.', 'map.html?mode=multi&route=kochi,kadamakkudy,munnar']
 ].forEach(([question, link]) => check(ask(question).reply.link?.[0] === link, `${question}: map link`, ask(question).reply.link?.[0]));
 
 const tenDay = engine.plans.find(plan => plan.id === 'ten-day');
-check(tenDay.route.join(',') === 'kochi,kadamakkudy,munroe-island,munnar,thekkady,wayanad,valiyaparamba,bekal', 'Published 10-day route remains consistent');
+check(tenDay.route.join(',') === 'kochi,kadamakkudy,munnar,thekkady,munroe-island,thiruvananthapuram,wayanad,valiyaparamba,bekal', 'Published 10-day route remains consistent');
 check(engine.routeCore.multiSummary(tenDay.route).comfort === 'Very Long Drive', '10-day route is explicitly demanding');
+
+const templePlans = ask('Which plans include Sree Padmanabhaswamy Temple?');
+check(['seven-day', 'ten-day', 'senior'].every(id => templePlans.reply.text.includes(engine.planData.byId[id].name)), 'Temple search lists all three matching plans', templePlans.reply.text);
+check(!templePlans.reply.text.includes('5-Day Hills + Houseboat'), 'Temple search excludes the regular 5-day plan', templePlans.reply.text);
+check(ask('Does the 7-day plan include Padmanabhaswamy Temple?').reply.text.includes('Day 7'), '7-day temple placement');
+check(ask('Does the 10-day plan include Padmanabhaswamy Temple?').reply.text.includes('Day 6'), '10-day temple placement');
+check(ask('Does the senior plan include Padmanabhaswamy Temple?').reply.text.includes('Day 5'), 'Senior temple placement');
+check(ask('Does the student plan include Padmanabhaswamy Temple?').reply.text.startsWith('No.'), 'Student plan excludes temple');
+
+const templeFollowUps = sequence(['Does the 10-day plan include Padmanabhaswamy Temple?', 'Where does this plan start?', 'Can everyone enter?', 'What if I cannot enter?']);
+check(templeFollowUps[1].reply.text.includes('starts in Kochi'), '10-day arrival remains Kochi', templeFollowUps[1].reply.text);
+check(templeFollowUps[2].reply.text.includes('restricted to Hindus') && templeFollowUps[2].reply.text.includes('traditional dress'), 'Temple restrictions retained in conversation', templeFollowUps[2].reply.text);
+check(templeFollowUps[3].reply.text.includes('Kuthiramalika Palace'), 'Temple non-entry alternative retained', templeFollowUps[3].reply.text);
+
+const seniorTemple = sequence(['Show me the senior plan.', 'Is the temple day tiring for seniors?']);
+check(seniorTemple[1].reply.text.includes('light Day 5') && seniorTemple[1].reply.text.includes('rest'), 'Senior temple day remains light', seniorTemple[1].reply.text);
 
 const result = { questions, assertions, passed: assertions - failures.length, failed: failures.length, failures };
 console.log(JSON.stringify(result, null, 2));

@@ -25,7 +25,8 @@ Object.entries(engine.destinations).forEach(([id, destination]) => {
     destination.aliases.forEach(alias => {
         const response = ask(`Could you explain ${alias} for first-time visitors?`);
         check(response.context.currentDestination === id, `Alias ${alias} resolves to ${id}`, response.context.currentDestination);
-        check(response.reply.id === 'destination', `Alias ${alias} returns destination guidance`, response.reply.id);
+        const expectedReply = id === 'thiruvananthapuram' && /padmanabha/.test(alias) ? 'attraction-overview' : 'destination';
+        check(response.reply.id === expectedReply, `Alias ${alias} returns destination guidance`, response.reply.id);
     });
 });
 

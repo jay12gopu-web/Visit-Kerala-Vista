@@ -300,9 +300,12 @@
         ['alappuzha', 'kumarakom', 23, 75, ['champakulam', 'thanneermukkom', 'kumarakomBird']],
         ['alappuzha', 'munroe-island', 75, 120, ['karunagappally', 'sasthamkotta']],
         ['munroe-island', 'varkala', 42, 90, ['kollam', 'paravurLake', 'kappil']],
+        ['munroe-island', 'thiruvananthapuram', 80, 100, ['kollam']],
         ['varkala', 'kovalam', 52, 90, ['anchuthengu', 'thiruvananthapuram', 'vizhinjam']],
+        ['varkala', 'thiruvananthapuram', 42, 70, []],
         ['kovalam', 'poovar', 17, 40, ['vizhinjam']],
         ['kovalam', 'thiruvananthapuram', 17, 35, ['vizhinjam', 'vellayani']],
+        ['kumarakom', 'thiruvananthapuram', 165, 240, ['karunagappally', 'kollam']],
         ['kozhikode', 'wayanad', 71, 150, ['thamarassery', 'lakkidi', 'pookode']],
         ['kozhikode', 'kannur', 92, 150, ['kappad', 'vadakara', 'muzhappilangad']],
         ['kannur', 'valiyaparamba', 42, 75, ['payyanur', 'kavvayi']],
@@ -313,10 +316,10 @@
     const plans = [
         { id: 'three-day', name: '3-Day Kochi + Backwaters', duration: '3 days', pace: 'Compact', url: 'plan-3-days.html', destinations: ['kochi', 'fort-kochi', 'alappuzha'], categories: ['city', 'water'] },
         { id: 'five-day', name: '5-Day Hills + Houseboat', duration: '5 days', pace: 'Balanced', url: 'plan-5-days.html', destinations: ['kochi', 'munnar', 'thekkady', 'alappuzha'], categories: ['city', 'hills', 'nature', 'water'] },
-        { id: 'seven-day', name: '7-Day Classic + Offbeat Kerala', duration: '7 days', pace: 'Balanced', url: 'plan-7-days.html', destinations: ['kochi', 'fort-kochi', 'kadamakkudy', 'munnar', 'thekkady', 'munroe-island', 'varkala'], categories: ['city', 'hills', 'nature', 'water', 'beach'] },
-        { id: 'ten-day', name: '10-Day Kerala Deep Dive', duration: '10 days', pace: 'Active', url: 'plan-10-days.html', destinations: ['kochi', 'kadamakkudy', 'munroe-island', 'munnar', 'thekkady', 'wayanad', 'valiyaparamba', 'bekal'], categories: ['city', 'hills', 'nature', 'water', 'beach'] },
+        { id: 'seven-day', name: '7-Day Classic + Offbeat Kerala', duration: '7 days', pace: 'Balanced', url: 'plan-7-days.html', destinations: ['kochi', 'fort-kochi', 'kadamakkudy', 'munnar', 'thekkady', 'munroe-island', 'varkala', 'thiruvananthapuram'], categories: ['city', 'hills', 'nature', 'water', 'beach'] },
+        { id: 'ten-day', name: '10-Day Kerala Deep Dive', duration: '10 days', pace: 'Active', url: 'plan-10-days.html', destinations: ['kochi', 'kadamakkudy', 'munnar', 'thekkady', 'munroe-island', 'thiruvananthapuram', 'wayanad', 'valiyaparamba', 'bekal'], categories: ['city', 'hills', 'nature', 'water', 'beach'] },
         { id: 'student', name: '5-Day Kerala Student Plan', duration: '5 days', pace: 'Active', url: 'plan-5-days-students.html', destinations: ['kochi', 'munnar', 'alappuzha'], categories: ['city', 'hills', 'water'], specialised: true },
-        { id: 'senior', name: '5-Day Easy-Paced Senior Plan', duration: '5 days', pace: 'Gentle', url: 'plan-5-days-seniors.html', destinations: ['kochi', 'kumarakom'], categories: ['city', 'water'], specialised: true }
+        { id: 'senior', name: '5-Day Easy-Paced Senior Plan', duration: '5 days', pace: 'Gentle', url: 'plan-5-days-seniors.html', destinations: ['kochi', 'kumarakom', 'thiruvananthapuram'], categories: ['city', 'water'], specialised: true }
     ];
 
     const categoryMeta = {

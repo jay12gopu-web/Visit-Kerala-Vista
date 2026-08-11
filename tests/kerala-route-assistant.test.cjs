@@ -110,7 +110,8 @@ check(multiSequence.at(-1).reply.link?.[0] === 'map.html?mode=multi&route=kochi,
 const longMulti = ask('Bekal to Kozhikode to Kochi to Poovar, should I fly?');
 check(longMulti.reply.id === 'transport-multi-cab', 'Long multi-city is cab-only', longMulti.reply.id);
 check(longMulti.context.activeRoute.join(',') === 'bekal,kozhikode,kochi,poovar', 'Long multi-city retains all stops', longMulti.context.activeRoute.join(','));
-check(longMulti.reply.text.includes('17 hr 15 min') && /long|overnight|sightseeing/.test(longMulti.reply.text), 'Long multi-city warns honestly', longMulti.reply.text);
+const longMultiSummary = routes.multiSummary(['bekal', 'kozhikode', 'kochi', 'poovar']);
+check(longMulti.reply.text.includes(routes.formatDuration(longMultiSummary.minutes)) && /long|overnight|sightseeing/.test(longMulti.reply.text), 'Long multi-city warns honestly', longMulti.reply.text);
 check(longMulti.reply.link?.[0] === 'map.html?mode=multi&route=bekal,kozhikode,kochi,poovar', 'Long multi-city map link', longMulti.reply.link?.[0]);
 
 [

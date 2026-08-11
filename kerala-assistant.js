@@ -86,7 +86,7 @@
             access: 'Use Thiruvananthapuram airport or railway station, followed by a short road transfer.'
         },
         thiruvananthapuram: {
-            name: 'Thiruvananthapuram', aliases: ['thiruvananthapuram', 'trivandrum', 'tvm'], page: 'destination-thiruvananthapuram.html', days: '1-2 days',
+            name: 'Thiruvananthapuram', aliases: ['thiruvananthapuram', 'trivandrum', 'tvm', 'padmanabhaswamy', 'padmanabhaswamy temple', 'padmanabha swamy', 'sree padmanabhaswamy temple'], page: 'destination-thiruvananthapuram.html', days: '1-2 days',
             summary: 'Kerala\'s capital, combining museums, heritage, major transport links and access to the southern coast.',
             interests: ['culture', 'heritage', 'food'], cost: 2, family: 3, senior: 3, monsoon: 3,
             stay: 'Central city hotels work for museums and rail access; beach-side stays suit travellers continuing to Kovalam or Poovar.',
@@ -209,6 +209,8 @@
     };
 
     const PLANS = PLAN_DATA?.plans || [];
+    const ATTRACTIONS = PLAN_DATA?.attractions || {};
+    const PADMANABHASWAMY = ATTRACTIONS.padmanabhaswamy || null;
 
     const PHRASES = {
         hello: { triggers: ['hello', 'greeting', 'namaskaram'], english: 'Hello / Greetings', malayalam: 'നമസ്കാരം', transliteration: 'Namaskaram', audio: 'audio/malayalam/namaskaram.mp3' },
@@ -295,13 +297,14 @@
         .trim();
 
     const freshContext = () => ({
-        version: 5,
+        version: 6,
         destinations: [],
         activeRoute: [],
         routeSource: null,
         activePlanId: null,
         basePlanId: null,
         currentDestination: null,
+        currentAttraction: null,
         duration: null,
         travellerType: null,
         adults: null,
@@ -342,7 +345,8 @@
         if (!PLAN_DATA?.byId?.[clean.lastPlanId]) clean.lastPlanId = null;
         if (!['published-plan', 'custom-user-route', 'transport-query'].includes(clean.routeSource)) clean.routeSource = null;
         if (!DESTINATIONS[clean.pendingPlanDestination]) clean.pendingPlanDestination = null;
-        clean.version = 5;
+        if (!ATTRACTIONS[clean.currentAttraction]) clean.currentAttraction = null;
+        clean.version = 6;
         return clean;
     };
 
@@ -450,6 +454,9 @@
     const extractEntities = (question, rawContext = freshContext()) => {
         const context = cleanContext(rawContext);
         const normalized = normaliseText(question);
+        let attraction = /\b(?:sree )?padmanabha\s*swamy(?: temple)?\b|\bpadmanabhaswamy(?: temple)?\b/.test(normalized) ? 'padmanabhaswamy' : null;
+        const activePlanIncludesTemple = PADMANABHASWAMY?.planIds.includes(context.activePlanId || context.basePlanId || context.lastPlanId);
+        if (!attraction && activePlanIncludesTemple && /\b(the )?temple(?: day| visit)?\b/.test(normalized)) attraction = 'padmanabhaswamy';
         let destinations = detectDestinations(normalized);
         const planIds = detectPlanIds(normalized);
         const dayRequest = extractDayRequest(normalized);
@@ -545,7 +552,7 @@
         }
         if (!intents.length && /\b(hi|hello|hey|namaste|bro|brother)\b/.test(normalized)) intents.push('help');
 
-        return { normalized, destinations, planIds, planComparison, dayRequest, duration, budget, month: monthKey || null, adults, children, seniors, infants, familySize, totalTravellers, travellerType, studentAgeGroup, interests, pace, transportPreference, transportModes, modeComparison, routeQuestion, accommodationPreference, intents, referencesThere, referencesOther };
+        return { normalized, attraction, destinations, planIds, planComparison, dayRequest, duration, budget, month: monthKey || null, adults, children, seniors, infants, familySize, totalTravellers, travellerType, studentAgeGroup, interests, pace, transportPreference, transportModes, modeComparison, routeQuestion, accommodationPreference, intents, referencesThere, referencesOther };
     };
 
     const mergeEntitiesIntoContext = (rawContext, entities) => {
@@ -582,6 +589,7 @@
                 context.currentDestination = entities.destinations.at(-1);
             }
         }
+        if (entities.attraction) context.currentAttraction = entities.attraction;
         if (entities.duration) context.duration = entities.duration;
         if (entities.travellerType) context.travellerType = entities.travellerType;
         if (entities.studentAgeGroup) context.studentAgeGroup = entities.studentAgeGroup;
@@ -781,7 +789,24 @@
             const point = ROUTE_CORE.pointSummary(plan.route[0], plan.route[1]);
             return point ? { distance: point.route.distance, minutes: point.route.minutes, longestLeg: { fromId: plan.route[0], toId: plan.route[1], route: point.route }, comfort: plan.driveLoad } : null;
         }
-        return ROUTE_CORE.multiSummary(plan.route);
+        const excluded = new Set((plan.nonRoadTransfers || []).map(item => `${item.from}:${item.to}`));
+        if (!excluded.size) return ROUTE_CORE.multiSummary(plan.route);
+        const legs = [];
+        for (let index = 0; index < plan.route.length - 1; index += 1) {
+            const fromId = plan.route[index];
+            const toId = plan.route[index + 1];
+            if (excluded.has(`${fromId}:${toId}`)) continue;
+            const point = ROUTE_CORE.pointSummary(fromId, toId);
+            if (point) legs.push({ fromId, toId, route: point.route });
+        }
+        const longestLeg = legs.reduce((longest, leg) => !longest || leg.route.minutes > longest.route.minutes ? leg : longest, null);
+        return {
+            distance: legs.reduce((sum, leg) => sum + leg.route.distance, 0),
+            minutes: legs.reduce((sum, leg) => sum + leg.route.minutes, 0),
+            longestLeg,
+            comfort: plan.driveLoad,
+            nonRoadTransfers: plan.nonRoadTransfers
+        };
     };
 
     const planMapLink = (plan, route = plan?.route || []) => {
@@ -843,9 +868,9 @@
 
         let difference;
         if (new Set(ids).has('student') && new Set(ids).has('five-day')) difference = 'The student plan uses Kochi, Munnar and Alappuzha with shared, value-conscious choices; the standard 5-day plan adds Thekkady and an overnight houseboat for the classic first-time circuit.';
-        else if (new Set(ids).has('senior') && new Set(ids).has('five-day')) difference = 'The senior plan keeps only Kochi and Kumarakom, two bases and a daytime cruise; the standard 5-day plan adds Munnar, Thekkady and an overnight houseboat, with more driving and hotel changes.';
-        else if (new Set(ids).has('five-day') && new Set(ids).has('seven-day')) difference = 'The 5-day plan is the compact classic Kochi-Munnar-Thekkady-Alappuzha circuit. The 7-day plan adds Kadamakkudy, replaces Alappuzha with a Munroe Island canoe stay and finishes at Varkala, but involves more movement.';
-        else if (new Set(ids).has('seven-day') && new Set(ids).has('ten-day')) difference = 'The 7-day plan stays in south and central Kerala and includes Varkala. The 10-day plan continues to Wayanad, Valiyaparamba and Bekal, adds more offbeat variety and carries a much heavier transfer load.';
+        else if (new Set(ids).has('senior') && new Set(ids).has('five-day')) difference = 'The senior plan uses Kochi, Kumarakom and Thiruvananthapuram with private transfers, protected rest and a daytime cruise; the standard 5-day plan adds Munnar, Thekkady and an overnight houseboat, with more hill driving.';
+        else if (new Set(ids).has('five-day') && new Set(ids).has('seven-day')) difference = 'The 5-day plan is the compact classic Kochi-Munnar-Thekkady-Alappuzha circuit. The 7-day plan adds Kadamakkudy, replaces Alappuzha with Munroe Island, and finishes through Varkala and Thiruvananthapuram heritage.';
+        else if (new Set(ids).has('seven-day') && new Set(ids).has('ten-day')) difference = 'Both plans include Thiruvananthapuram heritage. The 7-day plan finishes there after Varkala; the 10-day plan continues north by an overnight rail-and-road connection to Wayanad, Valiyaparamba and Bekal.';
         else difference = `${left.name} is ${left.pace} with ${left.overnightBases.length} bases; ${right.name} is ${right.pace} with ${right.overnightBases.length} bases.`;
 
         const decision = winner ? ` For this question, ${winner.name} is the stronger fit.` : ' Neither is universally better; choose by available days, preferred pace and the experiences you value most.';
@@ -871,7 +896,7 @@
         const text = entities.normalized;
         if (/\bbest plan for seniors?\b/.test(text)) {
             const plan = setPublishedPlan(context, planById('senior'));
-            return result('plan-feature-search', `The ${plan.name} is the best starting point: two overnight bases, shorter transfers, late starts, rest time and a daytime cruise. Confirm step-free access and boat boarding directly with providers.`, [plan.page, 'View the senior plan'], ['budget', 'transport']);
+            return result('plan-feature-search', `The ${plan.name} is the best starting point: three planned bases, private transfers, late starts, protected rest and a daytime cruise. Day 4 is the longest transfer; confirm step-free access and boat boarding directly.`, [plan.page, 'View the senior plan'], ['budget', 'transport']);
         }
         if (/\bbest plan for students?\b/.test(text)) {
             const plan = setPublishedPlan(context, planById('student'));
@@ -879,10 +904,10 @@
             return result('plan-feature-search', `The ${plan.name} is designed for an active, value-conscious group of friends using shared choices.${caution}`, [plan.page, 'View the student plan'], ['budget', 'transport']);
         }
         if (/\bbest plan for first timers?\b/.test(text)) return result('plan-feature-search', 'For a short first visit choose the 3-day plan; for the classic hills-and-houseboat circuit choose 5 days; for the fullest first trip with a beach finish choose 7 days.', ['itineraries.html', 'Compare first-time plans'], ['choose-plan', 'budget']);
-        if (/\bmost relaxed\b/.test(text)) return result('plan-feature-search', 'The 5-Day Easy-Paced Senior Plan is the most relaxed published route: two bases, late starts, short activities and a daytime cruise.', ['plan-5-days-seniors.html', 'View the relaxed plan'], ['budget', 'transport']);
+        if (/\bmost relaxed\b/.test(text)) return result('plan-feature-search', 'The 5-Day Easy-Paced Senior Plan is the most relaxed published route: protected rest, private transfers, short activities and a light final heritage day.', ['plan-5-days-seniors.html', 'View the relaxed plan'], ['budget', 'transport']);
         if (/\bmost offbeat\b/.test(text)) return result('plan-feature-search', 'The 10-Day Kerala Deep Dive contains the most offbeat places: Kadamakkudy, Munroe Island and Valiyaparamba, but it also has the heaviest driving load.', ['plan-10-days.html', 'View the 10-day plan'], ['transport', 'budget']);
         if (/\bfewest hotel changes\b/.test(text)) return result('plan-feature-search', 'The 3-Day Kochi + Backwaters plan and the 5-Day Easy-Paced Senior Plan each use only two overnight bases, so both require just one hotel or stay change.', ['itineraries.html', 'Compare all plans'], ['choose-plan']);
-        if (/\bleast driving\b/.test(text)) return result('plan-feature-search', 'The 5-Day Easy-Paced Senior Plan has the gentlest transfer pattern, using only Kochi and Kumarakom. The 3-day plan is also light, but includes an overnight houseboat change.', ['plan-5-days-seniors.html', 'View the gentlest route'], ['transport']);
+        if (/\bleast driving\b/.test(text)) return result('plan-feature-search', 'The 3-Day Kochi + Backwaters plan has the least total driving. The senior plan is paced more gently, but now includes a longer Kumarakom-to-Thiruvananthapuram transfer on Day 4.', ['plan-3-days.html', 'View the shortest route'], ['transport']);
 
         const matches = plansMatchingQuestion(entities) || [];
         const feature = entities.destinations[0] ? DESTINATIONS[entities.destinations[0]].name : /\bhouseboat\b/.test(text) ? 'an overnight houseboat' : entities.interests[0] || 'that feature';
@@ -914,6 +939,39 @@
         const south = new Set(['kollam', 'munroe-island', 'varkala', 'kovalam', 'poovar', 'thiruvananthapuram']);
         const spansState = ids.some(id => north.has(id)) && ids.some(id => south.has(id));
         return ids.length > Math.max(2, Math.ceil(days / 1.7)) || (spansState && days < 8);
+    };
+
+    const buildAttractionReply = (entities, context) => {
+        if (!PADMANABHASWAMY) return result('attraction-unavailable', 'The temple information is temporarily unavailable. Please use the Thiruvananthapuram guide and verify current visitor guidance before travel.', ['destination-thiruvananthapuram.html', 'Open the Thiruvananthapuram guide']);
+        const text = entities.normalized;
+        const plan = entities.planIds.length === 1
+            ? planById(entities.planIds[0])
+            : planById(context.activePlanId) || planById(context.basePlanId) || planById(context.lastPlanId);
+        if (plan && entities.planIds.length === 1) setPublishedPlan(context, plan);
+        const includedPlans = PADMANABHASWAMY.planIds.map(planById).filter(Boolean);
+        const sourceLink = [PADMANABHASWAMY.officialSource, 'Check official temple guidance'];
+
+        if (/\b(?:which|what) plans?\b|\bwhich itineraries?\b/.test(text)) {
+            return result('attraction-plans', `${PADMANABHASWAMY.name} is included in the ${formatList(includedPlans.map(item => item.name))}. It is not included in the regular 3-day or 5-day plan or the student plan.`, ['itineraries.html', 'Compare all plans'], ['choose-plan']);
+        }
+        if (plan && !/\b(tiring|seniors?|elderly|accessible|walking|queue)\b/.test(text) && /\b(does|is|include|included|has|part of)\b/.test(text)) {
+            const day = PADMANABHASWAMY.planDays[plan.id];
+            return day
+                ? result('attraction-plan-inclusion', `Yes. The ${plan.name} includes ${PADMANABHASWAMY.name} on Day ${day} in Thiruvananthapuram.`, [plan.page, 'View the full itinerary'], ['transport'])
+                : result('attraction-plan-inclusion', `No. The published ${plan.name} does not include ${PADMANABHASWAMY.name}. It is included only in the 7-day, 10-day and easy-paced senior plans.`, [plan.page, 'View this itinerary'], ['choose-plan']);
+        }
+        if (plan && /\b(which day|what day|when|day is it)\b/.test(text)) {
+            const day = PADMANABHASWAMY.planDays[plan.id];
+            return result('attraction-plan-day', day ? `${PADMANABHASWAMY.name} is scheduled on Day ${day} of the ${plan.name}.` : `The published ${plan.name} does not schedule this temple.`, [plan.page, 'View the day-by-day plan'], ['transport']);
+        }
+        if (/\b(where|location|which city)\b/.test(text)) return result('attraction-location', `${PADMANABHASWAMY.name} is in Thiruvananthapuram's historic East Fort area.`, ['destination-thiruvananthapuram.html', 'Open the city guide'], ['transport']);
+        if (/\b(non hindu|not hindu|everyone|who can enter|entry|dress|clothes|rules?|timings?)\b/.test(text)) return result('attraction-entry', `${PADMANABHASWAMY.entryNote} ${PADMANABHASWAMY.timingNote}`, sourceLink, ['safety']);
+        if (/\b(cant enter|cannot enter|cannot go|alternative|instead|prefer not)\b/.test(text)) return result('attraction-alternative', `${PADMANABHASWAMY.alternative.summary} Verify current opening details before visiting.`, ['destination-thiruvananthapuram.html', 'Open the Thiruvananthapuram guide'], ['culture']);
+        if (/\b(tiring|seniors?|elderly|accessible|walking|queue)\b/.test(text)) {
+            const seniorDay = PADMANABHASWAMY.planDays.senior;
+            return result('attraction-access', `The easy-paced senior plan keeps this as a light Day ${seniorDay} visit after a relaxed breakfast, followed by lunch, rest and departure. ${PADMANABHASWAMY.accessibilityNote}`, ['plan-5-days-seniors.html', 'View the senior plan'], ['safety']);
+        }
+        return result('attraction-overview', `${PADMANABHASWAMY.summary} ${PADMANABHASWAMY.entryNote} ${PADMANABHASWAMY.timingNote}`, sourceLink, ['culture', 'choose-plan']);
     };
 
     const buildPlanReply = (entities, context) => {
@@ -964,6 +1022,11 @@
 
         if (plan && (entities.duration || explicitPlan) && !editingRoute && (!context.activePlanId || context.activePlanId !== plan.id || context.routeSource !== 'published-plan')) setPublishedPlan(context, plan);
 
+        if (plan && /\b(where does .* start|where .* starts?|starting (?:city|point)|start in|reach the starting point|how do (?:i|we) reach the start)\b/.test(text)) {
+            const start = DESTINATIONS[plan.arrivalAt || plan.route[0]]?.name || DESTINATIONS[plan.route[0]]?.name;
+            return result('plan-start', `The ${plan.name} starts in ${start}. Its Transport section compares practical ways to reach that starting city; current flights, trains and buses must be verified before travel.`, [`${plan.page}#transport`, 'Open arrival transport options'], ['transport']);
+        }
+
         if (plan && requestsMap) {
             if (context.routeSource === 'custom-user-route' && context.activeRoute.length >= 2) {
                 return result('plan-map', `Opening your modified ${context.duration || plan.days}-day route: ${routeLine(context.activeRoute)}.`, mapLink(context.activeRoute), ['transport', 'budget']);
@@ -985,7 +1048,7 @@
                             : /\bbackwaters?\b/.test(text) ? plan.interests.includes('backwaters') : plan.interests.includes(feature);
             let explanation = included ? `Yes. The ${plan.name} includes ${feature}.` : `No. The ${plan.name} does not include ${feature}.`;
             if (!included && plan.id === 'seven-day' && destination === 'alappuzha') explanation += ' It uses Munroe Island for a quieter small-canal canoe and village-homestay experience instead.';
-            if (!included && plan.id === 'senior' && destination === 'munnar') explanation += ' It keeps Kochi and Kumarakom to avoid hill roads, frequent packing and longer transfers.';
+            if (!included && plan.id === 'senior' && destination === 'munnar') explanation += ' It uses Kochi, Kumarakom and Thiruvananthapuram to avoid winding hill roads, with protected rest around the longer Day 4 transfer.';
             if (!included && plan.id === 'student' && destination === 'thekkady') explanation += ' The student route keeps three bases to reduce time and shared costs.';
             return result('plan-inclusion', explanation, [plan.page, 'View the full itinerary'], ['transport', 'budget']);
         }
@@ -1026,9 +1089,9 @@
 
         if (plan && /^why\b|\bwhy does|\bwhy doesnt|\bwhy is\b/.test(text)) {
             if (plan.id === 'seven-day' && (/\balappuzha\b/.test(text) || /\bmunroe\b/.test(text))) return result('plan-why', 'The 7-day plan uses Munroe Island instead of Alappuzha to provide a quieter village homestay and small-canal canoe experience rather than the classic busy houseboat corridor.', [plan.page, 'View the 7-day plan'], ['transport']);
-            if (plan.id === 'senior' && /\bmunnar\b/.test(text)) return result('plan-why', 'Munnar would add winding hill roads, another hotel change and more walking. The senior plan keeps Kochi and Kumarakom so starts can be later and rest time remains protected.', [plan.page, 'View the senior plan'], ['transport']);
+            if (plan.id === 'senior' && /\bmunnar\b/.test(text)) return result('plan-why', 'Munnar would add winding hill roads and more walking. The senior plan instead uses Kochi, Kumarakom and Thiruvananthapuram with private transfers and protected rest; Day 4 is its longest road transfer.', [plan.page, 'View the senior plan'], ['transport']);
             if (plan.id === 'student' && /\bcheap|cheaper|cost|budget\b/.test(text)) return result('plan-why', 'The student plan controls costs through three bases, shared transport, budget-oriented stays and a shared shikara or canoe instead of automatically including a premium overnight houseboat.', [plan.page, 'View the student plan'], ['budget']);
-            if (plan.id === 'ten-day') return result('plan-why', 'The 10-day plan spans south, central and north Kerala. Its eight stops create major transfers, especially Thekkady to Wayanad, so it is an active deep-dive rather than a relaxed holiday.', [plan.page, 'View the 10-day plan'], ['transport']);
+            if (plan.id === 'ten-day') return result('plan-why', 'The 10-day plan spans south, central and north Kerala. It uses an overnight northbound rail connection after Thiruvananthapuram to avoid a giant cab transfer, but the route still has demanding road legs in north Kerala.', [plan.page, 'View the 10-day plan'], ['transport']);
             return result('plan-why', `${plan.name} is designed around ${formatList(plan.bestFor.slice(0, 2))}; its ${plan.pace} pace and ${plan.overnightBases.length} bases follow that purpose.`, [plan.page, 'View the full plan'], ['transport']);
         }
 
@@ -1055,13 +1118,13 @@
             setPublishedPlan(context, plan);
             const studentNote = plan.id === 'student' && context.studentAgeGroup === 'school' ? ' School groups and minors need supervised accommodation; do not assume an 18+ hostel will accept them.' : '';
             const seniorNote = context.travellerType === 'senior' && plan.id !== 'senior' ? ' For seniors, use lighter sightseeing and confirm access directly.' : '';
-            const longDriveNote = plan.id === 'ten-day' ? ' It is active and includes substantial transfers, especially Thekkady to Wayanad.' : context.avoidLongDrives && plan.driveLoad !== 'light' ? ' Because you want fewer long drives, consider the senior plan structure or remove one base.' : '';
+            const longDriveNote = plan.id === 'ten-day' ? ' It is active and uses an overnight northbound rail connection after Thiruvananthapuram to avoid a giant cab transfer; current rail operation must be verified.' : context.avoidLongDrives && plan.driveLoad !== 'light' ? ' Because you want fewer long drives, consider the senior plan structure or remove one base.' : '';
             return result('plan-recommendation', `${compactPlanSummary(plan)}${studentNote}${seniorNote}${longDriveNote}`, [plan.page, 'View the full plan'], ['budget', 'transport', 'hotels']);
         }
 
         const days = context.duration;
         if (!days) {
-            if (/\bgrandparents?\b/.test(text) && /\b(kids?|children)\b/.test(text)) return result('plan-recommendation', 'For grandparents and children, start with the gentle Kochi-Kumarakom structure: fewer hotel changes, short transfers and rest time. Tell me your days and interests before adding hills or more bases.', ['plan-5-days-seniors.html', 'View the gentle route'], ['choose-plan']);
+            if (/\bgrandparents?\b/.test(text) && /\b(kids?|children)\b/.test(text)) return result('plan-recommendation', 'For grandparents and children, start with the easy-paced Kochi-Kumarakom-Thiruvananthapuram structure: private transfers, protected rest and a light final heritage day. Day 4 is a longer road transfer, so keep it free of sightseeing.', ['plan-5-days-seniors.html', 'View the gentle route'], ['choose-plan']);
             return result('plan-clarify', 'Tell me how many days you have, who is travelling and your top two or three interests. I can then suggest a realistic published plan or custom route.', ['itineraries.html#trip-finder-title', 'Open the Plan Finder']);
         }
 
@@ -1325,12 +1388,13 @@
         if (entities.intents.includes('recall')) reply = buildRecallReply(context);
         else if (entities.intents.includes('live')) reply = buildLiveReply(entities, context);
         else if (entities.intents.includes('language')) reply = buildPhraseReply(entities);
+        else if (entities.attraction || (previous.currentAttraction === 'padmanabhaswamy' && /\b(which day|when|where is (?:it|that|the temple)|entry|enter|dress|rules?|timings?|alternative|cant|cannot|tiring|seniors?|accessible)\b/.test(entities.normalized))) reply = buildAttractionReply(entities, context);
         else if (entities.intents.includes('budget') && !entities.planComparison && (entities.budget || /\b(which plan is cheapest|cheapest plan|value vs comfortable|value or comfortable|reduce the cost|save money|trip budget|budget for|how much will .*plan|plan.*cost|under\s+\d+)\b/.test(entities.normalized))) reply = buildBudgetReply(entities, context);
         else if (entities.planComparison) reply = buildPlanReply(entities, context);
         else if (entities.planIds.length || entities.dayRequest.day || entities.dayRequest.range || entities.dayRequest.last) reply = buildPlanReply(entities, context);
         else if (entities.intents.includes('plan') && /\b(which plans?|which plan|best plan for|least driving|most relaxed|most offbeat|fewest hotel changes)\b/.test(entities.normalized)) reply = buildPlanReply(entities, context);
         else if (/\bgrandparents?\b/.test(entities.normalized) && /\b(kids?|children)\b/.test(entities.normalized)) reply = buildPlanReply(entities, context);
-        else if ((previous.activePlanId || previous.basePlanId) && !entities.routeQuestion && !entities.modeComparison && /\b(what happens|which day|when do we|when is|last day|where do we stay|stay each night|how many nights|hotel changes|overnight|sleep on|does it|does this|include|houseboat|beaches?|wildlife|why|how much driving|longest drive|route tiring|map it|show (?:it|that|this) on (?:the )?map|dont want|do not want|remove it)\b/.test(entities.normalized)) reply = buildPlanReply(entities, context);
+        else if ((previous.activePlanId || previous.basePlanId) && !entities.routeQuestion && !entities.modeComparison && (/\b(what happens|which day|when do we|when is|last day|where do we stay|stay each night|how many nights|hotel changes|overnight|sleep on|does it|does this|include|houseboat|beaches?|wildlife|why|how much driving|longest drive|route tiring|starting point|start in|reach the start|map it|show (?:it|that|this) on (?:the )?map|dont want|do not want|remove it)\b/.test(entities.normalized) || /\bwhere does .* start\b/.test(entities.normalized))) reply = buildPlanReply(entities, context);
         else if (previous.basePlanId && /\b(add|include|remove|skip|drop)\b/.test(entities.normalized) && entities.destinations.length) reply = buildPlanReply(entities, context);
         else if (previous.previousTopic === 'plan-comparison' && previous.previousPlanComparison.length === 2 && /\b(which one|which|less|more|cheaper|better|beaches?|backwaters?|driving|choose that one)\b/.test(entities.normalized)) reply = buildPlanReply(entities, context);
         else if (entities.referencesOther && entities.destinations.length === 1) reply = buildDestinationReply(entities, context);
