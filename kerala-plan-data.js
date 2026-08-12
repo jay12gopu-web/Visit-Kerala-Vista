@@ -14,7 +14,7 @@
             name: 'Sree Padmanabhaswamy Temple',
             destination: 'thiruvananthapuram',
             planIds: ['seven-day', 'ten-day', 'senior'],
-            planDays: { 'seven-day': 7, 'ten-day': 6, senior: 5 },
+            planDays: { 'seven-day': 8, 'ten-day': 10, senior: 5 },
             summary: "One of Thiruvananthapuram's most important heritage and religious landmarks, set within the historic East Fort area.",
             entryNote: 'Entry is restricted to Hindus and a strict traditional dress code applies.',
             timingNote: 'Visitors should verify current entry rules and worship timings before visiting because arrangements can change during festivals and special occasions.',
@@ -94,8 +94,8 @@
         },
         {
             id: 'seven-day',
-            name: '7-Day Classic + Offbeat Kerala',
-            days: 7,
+            name: '8-Day Classic + Offbeat Kerala',
+            days: 8,
             page: 'plan-7-days.html',
             budgetPlanId: 'seven-day',
             route: ['kochi', 'kadamakkudy', 'munnar', 'thekkady', 'munroe-island', 'varkala', 'thiruvananthapuram'],
@@ -105,7 +105,7 @@
             driveLoad: 'moderate',
             interests: ['culture', 'heritage', 'hills', 'wildlife', 'spices', 'backwaters', 'canoe', 'offbeat', 'beaches', 'wellness'],
             audiences: ['family', 'couple', 'solo', 'students', 'first-time'],
-            bestFor: ['a first full Kerala trip', 'travellers wanting famous and offbeat places', 'hills, backwaters and beach in one week'],
+            bestFor: ['a first full Kerala trip', 'travellers wanting famous and offbeat places', 'hills, backwaters and a proper beach stay'],
             highlights: ['Fort Kochi', 'Kadamakkudy', 'Munnar', 'Thekkady', 'Munroe Island', 'Varkala', 'Sree Padmanabhaswamy Temple'],
             experiences: ['heritage', 'island villages', 'tea country', 'spice country', 'small-canal canoe', 'Varkala coast', 'Thiruvananthapuram temple and palace heritage'],
             waterExperience: 'Munroe Island canoe experience',
@@ -113,64 +113,66 @@
                 { destination: 'kochi', nights: 2, type: 'hotel' },
                 { destination: 'munnar', nights: 2, type: 'hotel' },
                 { destination: 'thekkady', nights: 1, type: 'hotel' },
-                { destination: 'munroe-island', nights: 1, type: 'homestay' }
+                { destination: 'munroe-island', nights: 1, type: 'homestay' },
+                { destination: 'varkala', nights: 1, type: 'hotel or resort' }
             ],
             dayByDay: [
                 { days: [1, 2], label: 'Days 1-2', title: 'Kochi + Kadamakkudy Islands', destinations: ['kochi', 'kadamakkudy'], overnight: 'kochi', summary: "Day 1 settles into Fort Kochi. Day 2 visits Kadamakkudy's island roads and wetlands, then returns for Mattancherry and a Kathakali evening.", perDay: { 1: 'Settle into Fort Kochi and explore its heritage waterfront.', 2: 'Visit Kadamakkudy, then return for Mattancherry and a Kathakali evening.' } },
                 { days: [3, 4], label: 'Days 3-4', title: 'Munnar: Tea and Mist', destinations: ['munnar'], overnight: 'munnar', summary: 'These two Munnar days use flexible tea-estate walks, viewpoints, waterfalls and sunrise lookouts; the published page does not assign each activity to one exact day.' },
                 { days: [5], label: 'Day 5', title: 'Thekkady: Spice Country', destinations: ['thekkady'], overnight: 'thekkady', summary: 'Travel to Thekkady for the Periyar area, one gentle outdoor activity and an optional spice garden or cooking experience.' },
                 { days: [6], label: 'Day 6', title: 'Munroe Island: Small-Canal Kerala', destinations: ['munroe-island'], overnight: 'munroe-island', summary: 'Stay at a village homestay and take a small canoe through narrow palm-lined canals and the Ashtamudi backwaters.' },
-                { days: [7], label: 'Day 7', title: 'Varkala + Thiruvananthapuram Heritage Finish', destinations: ['varkala', 'thiruvananthapuram'], overnight: null, summary: 'Leave Munroe Island early for a concise Varkala cliff stop, then continue to Thiruvananthapuram for Sree Padmanabhaswamy Temple when current entry rules and timings allow. Visitors who cannot or prefer not to enter can visit nearby Kuthiramalika Palace when open before a suitably late departure.' }
+                { days: [7], label: 'Day 7', title: 'Varkala: Full Coastal Day', destinations: ['varkala'], overnight: 'varkala', summary: 'Travel from Munroe Island to Varkala, check in and use the day for the cliff walk, beach time, a relaxed lunch, optional wellness and sunset before staying overnight.' },
+                { days: [8], label: 'Day 8', title: 'Thiruvananthapuram Heritage + Departure', destinations: ['varkala', 'thiruvananthapuram'], overnight: null, summary: 'After a relaxed Varkala breakfast, continue to Thiruvananthapuram for Sree Padmanabhaswamy Temple when current entry rules and timings allow. Visitors who cannot or prefer not to enter can visit nearby Kuthiramalika Palace when open before departure.' }
             ],
             includes: ['Kochi', 'Kadamakkudy', 'Munnar', 'Thekkady', 'Munroe Island', 'canoe experience', 'Varkala', 'Thiruvananthapuram', 'Sree Padmanabhaswamy Temple'],
             excludes: ['Alappuzha', 'overnight houseboat', 'Wayanad'],
-            transportNotes: 'A south-Kerala route with several base changes. Munroe Island replaces the busier Alappuzha houseboat corridor; Day 7 continues from a concise Varkala stop to Thiruvananthapuram for the heritage finish and departure.',
-            stayNotes: 'Kochi and Munnar are the two-night bases, followed by one night each in Thekkady and Munroe Island.'
+            transportNotes: 'A south-Kerala route with several base changes. Munroe Island replaces the busier Alappuzha houseboat corridor; Day 7 is a proper Varkala stay and Day 8 continues to Thiruvananthapuram for heritage and departure.',
+            stayNotes: 'Seven nights: two each in Kochi and Munnar, followed by one night each in Thekkady, Munroe Island and Varkala.'
         },
         {
             id: 'ten-day',
-            name: '10-Day Kerala Deep Dive',
-            days: 10,
+            name: '11-Day Kerala Deep Dive',
+            days: 11,
             page: 'plan-10-days.html',
             budgetPlanId: 'ten-day',
-            route: ['kochi', 'kadamakkudy', 'munnar', 'thekkady', 'munroe-island', 'thiruvananthapuram', 'wayanad', 'valiyaparamba', 'bekal'],
+            route: ['kochi', 'wayanad', 'munnar', 'thekkady', 'alappuzha', 'varkala', 'thiruvananthapuram'],
             arrivalAt: 'kochi',
-            departureFrom: 'bekal',
+            departureFrom: 'thiruvananthapuram',
             pace: 'active',
             driveLoad: 'high',
-            interests: ['culture', 'heritage', 'hills', 'wildlife', 'spices', 'backwaters', 'canoe', 'offbeat', 'beaches', 'food'],
+            interests: ['culture', 'heritage', 'hills', 'wildlife', 'spices', 'backwaters', 'houseboat', 'beaches', 'food'],
             audiences: ['family', 'couple', 'solo', 'students'],
-            bestFor: ['active offbeat explorers', 'travellers comfortable with major transfers', 'a north-and-south Kerala overview'],
-            highlights: ['Fort Kochi', 'Kadamakkudy', 'Munnar', 'Thekkady', 'Munroe Island', 'Sree Padmanabhaswamy Temple', 'Wayanad', 'Valiyaparamba', 'Bekal'],
-            experiences: ['heritage and food', 'island villages', 'tea country', 'spice and nature activity', 'canoe', 'Thiruvananthapuram temple and palace heritage', 'forests and falls', 'north Kerala backwaters', 'Bekal coast'],
-            waterExperience: 'canoe and day-cruise experiences',
+            bestFor: ['a longer hill, wildlife and coast journey', 'travellers comfortable with two major road transfers', 'Wayanad and classic Alappuzha backwaters'],
+            highlights: ['Wayanad', 'Munnar', 'Thekkady', 'Alappuzha', 'Varkala', 'Sree Padmanabhaswamy Temple'],
+            experiences: ['Wayanad forests and coffee country', 'tea country', 'spice and authorised nature activities', 'classic Alappuzha backwaters', 'Varkala coast', 'Thiruvananthapuram temple and palace heritage'],
+            waterExperience: 'Alappuzha houseboat day experience or shorter shikara ride',
             overnightBases: [
-                { destination: 'kochi', nights: 2, type: 'hotel' },
-                { destination: 'munnar', nights: 1, type: 'hotel' },
-                { destination: 'thekkady', nights: 1, type: 'hotel' },
-                { destination: 'munroe-island', nights: 1, type: 'homestay' },
                 { destination: 'wayanad', nights: 2, type: 'hotel or nature stay' },
-                { destination: 'bekal', nights: 1, type: 'hotel or resort' }
+                { destination: 'munnar', nights: 2, type: 'hotel or plantation stay' },
+                { destination: 'thekkady', nights: 2, type: 'hotel or nature resort' },
+                { destination: 'alappuzha', nights: 2, type: 'hotel or backwater resort' },
+                { destination: 'varkala', nights: 1, type: 'hotel or resort' },
+                { destination: 'thiruvananthapuram', nights: 1, type: 'hotel' }
             ],
-            travelNights: [
-                { afterDay: 6, nights: 1, type: 'overnight northbound rail journey', summary: 'Use a currently verified overnight rail connection from Thiruvananthapuram towards Kozhikode, followed by the road transfer to Wayanad.' }
-            ],
-            nonRoadTransfers: [
-                { from: 'thiruvananthapuram', to: 'wayanad', mode: 'overnight rail and road', summary: 'Use a currently verified overnight rail connection towards Kozhikode, then continue by road to Wayanad.' }
-            ],
+            travelNights: [],
+            nonRoadTransfers: [],
             dayByDay: [
-                { days: [1, 2], label: 'Days 1-2', title: 'Kochi + Kadamakkudy Islands', destinations: ['kochi', 'kadamakkudy'], overnight: 'kochi', summary: 'Open with Fort Kochi heritage and food, then visit Kadamakkudy at sunrise before returning for Mattancherry and an evening performance.' },
-                { days: [3], label: 'Day 3', title: 'Munnar High Country', destinations: ['munnar'], overnight: 'munnar', summary: 'Travel from Kochi into Munnar, keeping stops selective so there is time for a tea-country viewpoint and a restful hill evening.' },
-                { days: [4], label: 'Day 4', title: 'Thekkady and Spices', destinations: ['munnar', 'thekkady'], overnight: 'thekkady', summary: 'Use the Munnar morning for one compact tea-country experience, then continue to the Periyar region for spice country and a light evening.' },
-                { days: [5], label: 'Day 5', title: 'Munroe Island Canoe Country', destinations: ['thekkady', 'munroe-island'], overnight: 'munroe-island', summary: 'Travel south with a proper comfort stop, then explore Munroe Island by small canoe and settle into a village homestay.' },
-                { days: [6], label: 'Day 6', title: 'Thiruvananthapuram Heritage + Northbound Rail', destinations: ['munroe-island', 'thiruvananthapuram'], overnight: null, summary: 'Continue to Thiruvananthapuram for Sree Padmanabhaswamy Temple when current rules and timings allow, or nearby Kuthiramalika Palace for visitors who cannot enter. Keep meal and rest time before a currently verified overnight rail connection towards Kozhikode.' },
-                { days: [7, 8], label: 'Days 7-8', title: 'Wayanad: Forests and Falls', destinations: ['wayanad'], overnight: 'wayanad', summary: 'Continue from the northbound rail arrival to Wayanad by road, keep Day 7 light, then use Day 8 for one compact forest, plantation, waterfall or cave circuit.' },
-                { days: [9, 10], label: 'Days 9-10', title: 'Valiyaparamba Islands + Bekal', destinations: ['valiyaparamba', 'bekal'], overnight: 'bekal', summary: 'Finish with Valiyaparamba island backwaters, Malabar food and a final coastal evening near Bekal Fort before departure.' }
+                { days: [1], label: 'Day 1', title: 'Kochi Arrival + Wayanad Transfer', destinations: ['kochi', 'wayanad'], overnight: 'wayanad', summary: 'After arriving in Kochi, begin the approximately 270 km long road transfer to Wayanad. An early arrival is strongly recommended; check in, dine and rest without adding sightseeing.' },
+                { days: [2], label: 'Day 2', title: 'Wayanad: Choose One Strong Circuit', destinations: ['wayanad'], overnight: 'wayanad', summary: 'Choose one geographically compact circuit around coffee country, a viewpoint and one weather-appropriate heritage, waterfall or nature activity. Trekking and seasonal access must be confirmed.' },
+                { days: [3], label: 'Day 3', title: 'Wayanad to Munnar: Long Transfer', destinations: ['wayanad', 'munnar'], overnight: 'munnar', summary: 'Leave early for the approximately 360 km full-day road transfer, with planned meal and comfort breaks. Check in, dine and rest without major sightseeing.' },
+                { days: [4], label: 'Day 4', title: 'Munnar: Tea Country', destinations: ['munnar'], overnight: 'munnar', summary: 'Build one realistic local circuit around Eravikulam when open, tea estates and two nearby lake, viewpoint or waterfall stops, with an optional evening cultural performance.' },
+                { days: [5], label: 'Day 5', title: 'Munnar to Thekkady', destinations: ['munnar', 'thekkady'], overnight: 'thekkady', summary: 'Use the morning for checkout and the hill transfer, then choose a spice plantation or one light Periyar-area experience after arrival.' },
+                { days: [6], label: 'Day 6', title: 'Thekkady: Periyar + Spice Country', destinations: ['thekkady'], overnight: 'thekkady', summary: 'Choose a pre-booked Periyar Lake boat safari or another authorised nature experience, add a spice visit if not completed, and keep the evening for an optional cultural programme.' },
+                { days: [7], label: 'Day 7', title: 'Thekkady to Alappuzha', destinations: ['thekkady', 'alappuzha'], overnight: 'alappuzha', summary: 'Use the official conservative planning allowance of about 164 km / 5 hours, then check in and choose a light lighthouse or beach evening rather than a full cruise.' },
+                { days: [8], label: 'Day 8', title: 'Alappuzha: Classic Backwaters', destinations: ['alappuzha'], overnight: 'alappuzha', summary: 'Choose either a longer daytime houseboat experience or a shorter shikara ride. Add one primary beach and, if practical, Alappuzha Lighthouse or Ambalappuzha Sree Krishna Temple without overpacking the boating day.' },
+                { days: [9], label: 'Day 9', title: 'Alappuzha to Varkala', destinations: ['alappuzha', 'varkala'], overnight: 'varkala', summary: 'Travel approximately 107 km to Varkala, check in and use the afternoon for the cliff, beach, cafes and sunset. Janardanaswamy Temple is optional.' },
+                { days: [10], label: 'Day 10', title: 'Varkala to Thiruvananthapuram', destinations: ['varkala', 'thiruvananthapuram'], overnight: 'thiruvananthapuram', summary: 'Travel to Thiruvananthapuram for Sree Padmanabhaswamy Temple when current rules allow, or Kuthiramalika Palace. Add only one further museum, heritage or Kovalam option if time and energy permit.' },
+                { days: [11], label: 'Day 11', title: 'Thiruvananthapuram Departure', destinations: ['thiruvananthapuram'], overnight: null, summary: 'Keep sightseeing minimal and continue to the airport or railway station according to the confirmed departure time.' }
             ],
-            includes: ['Kochi', 'Kadamakkudy', 'Munnar', 'Thekkady', 'Munroe Island', 'Thiruvananthapuram', 'Sree Padmanabhaswamy Temple', 'Wayanad', 'Valiyaparamba', 'Bekal'],
-            excludes: ['overnight houseboat', 'relaxed pace', 'few hotel changes'],
-            transportNotes: 'This remains the most demanding published route, but it avoids a giant Thiruvananthapuram-to-Wayanad cab day. Use a currently verified overnight rail connection towards Kozhikode after Day 6, then continue by road to Wayanad. The interactive multi-city map still displays road-planning metrics for the full route.',
-            stayNotes: 'Six accommodation bases across south, central and north Kerala, plus one overnight inter-regional rail journey. Confirm the rail service before fixing non-refundable stays.'
+            includes: ['Kochi arrival gateway', 'Wayanad', 'Munnar', 'Thekkady', 'Alappuzha', 'houseboat day experience or shikara', 'Varkala', 'Thiruvananthapuram', 'Sree Padmanabhaswamy Temple'],
+            excludes: ['Kadamakkudy', 'Munroe Island', 'Valiyaparamba', 'Bekal', 'overnight houseboat'],
+            transportNotes: 'This is the most demanding published road itinerary. Day 1 from Kochi to Wayanad and Day 3 from Wayanad to Munnar are long transfers, so both days require early starts, planned breaks and no major sightseeing after arrival.',
+            stayNotes: 'Ten hotel nights across Wayanad, Munnar, Thekkady, Alappuzha, Varkala and Thiruvananthapuram. Kochi remains the arrival gateway but is not an overnight base in this route.'
         },
         {
             id: 'student',

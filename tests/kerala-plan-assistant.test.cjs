@@ -56,15 +56,15 @@ check(comparisonFollowUp.slice(1).every(item => item.reply.id === 'plan-comparis
 check(comparisonFollowUp[2].context.planComparisonWinner === 'seven-day', 'Beach comparison selects 7-day plan', comparisonFollowUp[2].context.planComparisonWinner);
 
 [
-    ['Which plan includes beaches?', '7-Day Classic'],
+    ['Which plan includes beaches?', '8-Day Classic'],
     ['Which plan has wildlife?', '5-Day Hills'],
     ['Which plans include Munnar?', '5-Day Hills'],
     ['Which plan has a houseboat?', '3-Day Kochi'],
-    ['Which plan includes Varkala?', '7-Day Classic'],
-    ['Which plan includes Wayanad?', '10-Day Kerala'],
+    ['Which plan includes Varkala?', '8-Day Classic'],
+    ['Which plan includes Wayanad?', '11-Day Kerala'],
     ['Which plan has the least driving?', '3-Day Kochi'],
     ['Which plan is the most relaxed?', 'Easy-Paced Senior'],
-    ['Which plan has the most offbeat places?', '10-Day Kerala'],
+    ['Which plan has the most offbeat places?', '8-Day Classic'],
     ['Which plan has the fewest hotel changes?', '3-Day Kochi']
 ].forEach(([question, phrase]) => {
     const response = ask(question);
@@ -122,7 +122,7 @@ check(fiveDayQuestions[5].reply.text.includes('Day 2'), 'Munnar day found', five
     ['Why is Munroe Island included in the 7-day plan?', 'small-canal canoe'],
     ['Why does the senior plan not include Munnar?', 'winding hill roads'],
     ['Why is the student plan cheaper?', 'shared transport'],
-    ['Why is the 10-day plan more tiring?', 'overnight northbound rail']
+    ['Why is the 10-day plan more tiring?', 'Kochi to Wayanad']
 ].forEach(([question, phrase]) => check(ask(question).reply.text.includes(phrase), `${question}: plan reason`));
 
 const memoryFive = sequence(['Give me the 5-day plan.', 'What happens on Day 3?', 'Where do we stay?', 'Does it include a houseboat?']);
@@ -130,8 +130,8 @@ check(memoryFive.slice(1).every(item => item.context.activePlanId === 'five-day'
 check(memoryFive[1].reply.text.includes('Thekkady'), 'Plan memory gives correct day');
 
 const durationSwitch = sequence(['Give me the 10-day plan.', 'Actually make it 7 days.']);
-check(durationSwitch[1].context.activePlanId === 'seven-day', 'Duration switch selects published 7-day plan', durationSwitch[1].context.activePlanId);
-check(durationSwitch[1].context.activeRoute.join(',') === 'kochi,kadamakkudy,munnar,thekkady,munroe-island,varkala,thiruvananthapuram', 'Duration switch clears stale 10-day route', durationSwitch[1].context.activeRoute.join(','));
+check(durationSwitch[1].context.activePlanId === null && durationSwitch[1].context.routeSource === 'custom-user-route', 'Arbitrary 7-day request remains a custom duration', durationSwitch[1].context.activePlanId);
+check(durationSwitch[1].context.activeRoute.join(',') === 'kochi,munnar,alappuzha', 'Duration switch clears stale 11-day route', durationSwitch[1].context.activeRoute.join(','));
 
 const studentMap = sequence(['Give me the student plan.', 'Map it.']);
 check(studentMap[1].reply.link?.[0] === 'map.html?mode=multi&route=kochi,munnar,alappuzha', 'Student plan map handoff', studentMap[1].reply.link?.[0]);
@@ -165,10 +165,10 @@ check(/minor|supervised|18\+/.test(school.reply.text), 'School students receive 
 check(ask('We have grandparents and kids.').reply.text.includes('easy-paced'), 'Multigenerational route is useful immediately');
 
 [
-    ['We have 7 days and want beaches.', 'seven-day'],
+    ['We have 7 days and want beaches.', 'Varkala'],
     ['We have 5 days and want hills and backwaters.', 'five-day'],
     ['We want Munnar and a houseboat. Which plan?', '5-Day Hills'],
-    ['We want offbeat Kerala. Which plan?', '10-Day Kerala']
+    ['We want offbeat Kerala. Which plan?', '8-Day Classic']
 ].forEach(([question, expected]) => {
     const response = ask(question);
     check(response.context.activePlanId === expected || response.reply.text.includes(expected), `${question}: interest-aware plan`, `${response.context.activePlanId} ${response.reply.text}`);
@@ -182,7 +182,7 @@ check(ask("Give me the 5-day plan without a houseboat.").reply.text.includes('la
 [
     ['Show the 5-day plan on the map.', 'map.html?mode=multi&route=kochi,munnar,thekkady,alappuzha'],
     ['Map the 7-day itinerary.', 'map.html?mode=multi&route=kochi,kadamakkudy,munnar,thekkady,munroe-island,varkala,thiruvananthapuram'],
-    ['Show the 10-day route on the map.', 'map.html?mode=multi&route=kochi,kadamakkudy,munnar,thekkady,munroe-island,thiruvananthapuram,wayanad,valiyaparamba,bekal'],
+    ['Show the 10-day route on the map.', 'map.html?mode=multi&route=kochi,wayanad,munnar,thekkady,alappuzha,varkala,thiruvananthapuram'],
     ['Map the senior plan.', 'map.html?mode=multi&route=kochi,kumarakom,thiruvananthapuram'],
     ['Map the student plan.', 'map.html?mode=multi&route=kochi,munnar,alappuzha'],
     ['Show Munnar to Thekkady on the map.', 'map.html?from=Munnar&to=Thekkady'],
@@ -190,14 +190,34 @@ check(ask("Give me the 5-day plan without a houseboat.").reply.text.includes('la
 ].forEach(([question, link]) => check(ask(question).reply.link?.[0] === link, `${question}: map link`, ask(question).reply.link?.[0]));
 
 const tenDay = engine.plans.find(plan => plan.id === 'ten-day');
-check(tenDay.route.join(',') === 'kochi,kadamakkudy,munnar,thekkady,munroe-island,thiruvananthapuram,wayanad,valiyaparamba,bekal', 'Published 10-day route remains consistent');
-check(engine.routeCore.multiSummary(tenDay.route).comfort === 'Very Long Drive', '10-day route is explicitly demanding');
+check(tenDay.route.join(',') === 'kochi,wayanad,munnar,thekkady,alappuzha,varkala,thiruvananthapuram', 'Published 11-day route remains consistent');
+check(engine.routeCore.multiSummary(tenDay.route).comfort === 'Very Long Drive', '11-day route is explicitly demanding');
+
+[
+    ['Show me the 8-day plan.', '8-Day Classic + Offbeat Kerala'],
+    ['Where do we stay on Night 7 in the 8-day plan?', 'Varkala'],
+    ['What happens on Day 8 of the 8-day plan?', 'Thiruvananthapuram'],
+    ['Show me the 11-day plan.', '11-Day Kerala Deep Dive'],
+    ['Which day is Alappuzha in the 11-day plan?', 'Day 7'],
+    ['Which day is Varkala in the 11-day plan?', 'Day 9'],
+    ['Where does the 11-day plan start?', 'starts in Kochi'],
+    ['Houseboat or shikara in the 11-day plan?', 'choose one']
+].forEach(([question, phrase]) => check(ask(question).reply.text.includes(phrase), `${question}: rebuilt itinerary fact`));
+
+[
+    ['Does the 11-day plan include Kadamakkudy?', false],
+    ['Does the 11-day plan include Munroe Island?', false],
+    ['Does the 11-day plan include Valiyaparamba?', false],
+    ['Does the 11-day plan include Bekal?', false],
+    ['Does the 11-day plan include Alappuzha?', true],
+    ['Does the 11-day plan include Varkala?', true]
+].forEach(([question, expected]) => check(ask(question).reply.text.startsWith(expected ? 'Yes.' : 'No.'), `${question}: final route inclusion`));
 
 const templePlans = ask('Which plans include Sree Padmanabhaswamy Temple?');
 check(['seven-day', 'ten-day', 'senior'].every(id => templePlans.reply.text.includes(engine.planData.byId[id].name)), 'Temple search lists all three matching plans', templePlans.reply.text);
 check(!templePlans.reply.text.includes('5-Day Hills + Houseboat'), 'Temple search excludes the regular 5-day plan', templePlans.reply.text);
-check(ask('Does the 7-day plan include Padmanabhaswamy Temple?').reply.text.includes('Day 7'), '7-day temple placement');
-check(ask('Does the 10-day plan include Padmanabhaswamy Temple?').reply.text.includes('Day 6'), '10-day temple placement');
+check(ask('Does the 7-day plan include Padmanabhaswamy Temple?').reply.text.includes('Day 8'), '8-day temple placement');
+check(ask('Does the 10-day plan include Padmanabhaswamy Temple?').reply.text.includes('Day 10'), '11-day temple placement');
 check(ask('Does the senior plan include Padmanabhaswamy Temple?').reply.text.includes('Day 5'), 'Senior temple placement');
 check(ask('Does the student plan include Padmanabhaswamy Temple?').reply.text.startsWith('No.'), 'Student plan excludes temple');
 

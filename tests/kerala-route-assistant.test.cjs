@@ -82,7 +82,7 @@ check(multiSequence.map(turn => turn.reply.id).join(',') === expectedMultiIds.jo
 check(multiSequence.at(-1).context.activeRoute.join(',') === 'kochi,munnar,thekkady,alappuzha', 'Exact multi-city route order', multiSequence.at(-1).context.activeRoute.join(','));
 check(multiSequence.slice(2).every(turn => /Cab|cab/.test(turn.reply.text) || ['transport-multi-longest', 'transport-multi-stops', 'transport-multi-comfort'].includes(turn.reply.id)), 'Multi-city remains cab-only');
 check(multiSequence[5].reply.text.includes('3 road legs'), 'Multi-city leg count', multiSequence[5].reply.text);
-check(multiSequence[6].reply.text.includes('Thekkady → Alappuzha') && multiSequence[6].reply.text.includes('138 km'), 'Multi-city longest leg', multiSequence[6].reply.text);
+check(multiSequence[6].reply.text.includes('Thekkady → Alappuzha') && multiSequence[6].reply.text.includes('164 km'), 'Multi-city longest leg', multiSequence[6].reply.text);
 check(multiSequence[7].reply.text.includes('Cheeyappara Waterfalls'), 'Multi-city recommended stops', multiSequence[7].reply.text);
 check(multiSequence.at(-1).reply.link?.[0] === 'map.html?mode=multi&route=kochi,munnar,thekkady,alappuzha', 'Multi-city map link', multiSequence.at(-1).reply.link?.[0]);
 

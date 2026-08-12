@@ -5,8 +5,8 @@
     const PLAN_OPTIONS = {
         'three-day': { name: '3-Day Kochi + Backwaters', pageUrl: 'plan-3-days.html' },
         'five-day': { name: '5-Day Hills + Houseboat', pageUrl: 'plan-5-days.html' },
-        'seven-day': { name: '7-Day Classic + Offbeat Kerala', pageUrl: 'plan-7-days.html' },
-        'ten-day': { name: '10-Day Kerala Deep Dive', pageUrl: 'plan-10-days.html' },
+        'seven-day': { name: '8-Day Classic + Offbeat Kerala', pageUrl: 'plan-7-days.html' },
+        'ten-day': { name: '11-Day Kerala Deep Dive', pageUrl: 'plan-10-days.html' },
         student: { name: '5-Day Kerala Student Plan', pageUrl: 'plan-5-days-students.html' },
         senior: { name: '5-Day Easy-Paced Senior Plan', pageUrl: 'plan-5-days-seniors.html' }
     };

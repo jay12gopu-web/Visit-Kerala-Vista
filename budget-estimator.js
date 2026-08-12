@@ -41,18 +41,19 @@
             accessibilityRelevant: true
         },
         'seven-day': {
-            name: '7-Day Classic + Offbeat Kerala',
+            name: '8-Day Classic + Offbeat Kerala',
             route: 'Kochi → Kadamakkudy → Munnar → Thekkady → Munroe Island → Varkala → Thiruvananthapuram',
             pageUrl: 'plan-7-days.html',
-            days: 7,
-            nights: 6,
-            hotelNights: 6,
-            bases: 4,
+            days: 8,
+            nights: 7,
+            hotelNights: 7,
+            bases: 5,
             routeIntensity: 'Moderate-high',
-            transportUnits: 7.2,
-            activityUnits: 6.4,
-            paidActivities: ['heritage and plantation visits', 'wildlife-region activity', 'Munroe Island canoe'],
+            transportUnits: 7.8,
+            activityUnits: 7.2,
+            paidActivities: ['heritage and plantation visits', 'wildlife-region activity', 'Munroe Island canoe', 'Varkala and Thiruvananthapuram heritage or wellness choices'],
             cruise: 'canoe',
+            waterExperienceLabel: 'Munroe Island canoe experience',
             cruiseFactor: 0.9,
             seasonalSensitivity: 1.12,
             majorTransfers: true,
@@ -61,19 +62,20 @@
             accessibilityRelevant: true
         },
         'ten-day': {
-            name: '10-Day Kerala Deep Dive',
-            route: 'Kochi → Kadamakkudy → Munnar → Thekkady → Munroe Island → Thiruvananthapuram → Wayanad → Valiyaparamba → Bekal',
+            name: '11-Day Kerala Deep Dive',
+            route: 'Kochi → Wayanad → Munnar → Thekkady → Alappuzha → Varkala → Thiruvananthapuram',
             pageUrl: 'plan-10-days.html',
-            days: 10,
-            nights: 9,
-            hotelNights: 8,
+            days: 11,
+            nights: 10,
+            hotelNights: 10,
             bases: 6,
             routeIntensity: 'High',
-            transportUnits: 13,
-            activityUnits: 9,
-            paidActivities: ['heritage and nature visits', 'wildlife-region activities', 'northern backwater cruise'],
+            transportUnits: 15.5,
+            activityUnits: 10.5,
+            paidActivities: ['Wayanad nature and heritage choices', 'Munnar and Thekkady activities', 'Alappuzha backwater experience', 'Varkala and Thiruvananthapuram heritage choices'],
             cruise: 'day',
-            cruiseFactor: 1.25,
+            waterExperienceLabel: 'Alappuzha houseboat day experience or shikara ride',
+            cruiseFactor: 1.1,
             seasonalSensitivity: 1.14,
             majorTransfers: true,
             studentShared: false,
@@ -416,7 +418,7 @@
             groupSummary(group, input.month, input.holidayPeak),
             `${rooms.rooms} ${rooms.rooms === 1 ? 'hotel room' : 'hotel rooms'} for ${plan.hotelNights} ${plan.hotelNights === 1 ? 'night' : 'nights'}`,
             rooms.extraBeds ? `${plural(rooms.extraBeds, 'child extra bed')} across ${plan.hotelNights} hotel ${plan.hotelNights === 1 ? 'night' : 'nights'}` : 'No separate child extra-bed charge under this room arrangement',
-            plan.cruise === 'overnight' ? `${plural(rooms.cabins, 'houseboat cabin')}` : plan.cruise === 'day' ? 'One day-cruise allowance' : plan.cruise === 'canoe' ? 'One local canoe-experience allowance' : 'No cruise included',
+            plan.cruise === 'overnight' ? `${plural(rooms.cabins, 'houseboat cabin')}` : `${cruiseLabel(plan)} allowance`,
             `${vehicle.name} with luggage and infant-space allowance where relevant`,
             `Age-sensitive allowance for ${plan.paidActivities.join(', ')}`,
             `${season.label}: ${season.multiplier.toFixed(2)}x seasonal multiplier`,
@@ -452,13 +454,13 @@
         contingency: 'Taxes and contingency'
     };
 
-    const cruiseLabel = plan => plan.cruise === 'overnight'
+    const cruiseLabel = plan => plan.waterExperienceLabel || (plan.cruise === 'overnight'
         ? 'Overnight houseboat'
         : plan.cruise === 'day'
             ? 'Day cruise'
             : plan.cruise === 'canoe'
                 ? 'Canoe experience'
-                : 'No cruise included';
+                : 'No cruise included');
 
     const serialiseRange = range => ({
         minimum: range.lower,
@@ -962,7 +964,7 @@
         const fullRoomChildEstimate = calculateEstimate('five-day', { adults: 2, seniors: 0, children: 1, childAges: [11], infants: 0, month: 3, roomPreference: 'practical' });
         if (!extraBedEstimate.rooms.extraBeds || extraBedEstimate.tiers.value.ranges.childExtraBeds.lower <= 0) failures.push({ issue: 'Child extra-bed charge was not included' });
         if (fullRoomChildEstimate.rooms.childDrivenRooms && fullRoomChildEstimate.tiers.value.ranges.childExtraBeds.lower > 0) failures.push({ issue: 'Child room and extra bed were double-counted' });
-        if (cruiseLabel(PLAN_DATA['seven-day']) !== 'Canoe experience' || cruiseLabel(PLAN_DATA['three-day']) !== 'Overnight houseboat' || cruiseLabel(PLAN_DATA['ten-day']) !== 'Day cruise') failures.push({ issue: 'Plan-specific water-experience labels are incorrect' });
+        if (cruiseLabel(PLAN_DATA['seven-day']) !== 'Munroe Island canoe experience' || cruiseLabel(PLAN_DATA['three-day']) !== 'Overnight houseboat' || !cruiseLabel(PLAN_DATA['ten-day']).includes('Alappuzha houseboat')) failures.push({ issue: 'Plan-specific water-experience labels are incorrect' });
         if (Object.values(PLAN_DATA).some(plan => !plan.name || !plan.route || !plan.pageUrl || !plan.days || !plan.nights || !plan.routeIntensity || !plan.transportUnits || !plan.activityUnits || !plan.paidActivities?.length || !plan.accessibilityRelevant)) failures.push({ issue: 'Incomplete plan pricing data' });
 
         let enquiryCases = 0;

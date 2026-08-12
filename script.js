@@ -585,86 +585,136 @@ document.addEventListener('DOMContentLoaded', () => {
                 note: 'Use a small canoe for the narrow canals and confirm the meeting point with the homestay. Water level, rain and local conditions can change the route.'
             },
             {
-                place: 'Munroe Island to Varkala and Thiruvananthapuram',
-                time: '7:00 AM onward',
-                transfer: 'Approx. 1.5 hr to Varkala and about 1 hr onward',
+                place: 'Munroe Island to Varkala',
+                time: '8:00 AM-8:00 PM',
+                transfer: 'Approx. 1.5 hr by road',
+                stay: 'Varkala',
+                meals: 'Breakfast, relaxed coastal lunch and dinner',
+                summary: 'Give Varkala a proper coastal day with time to check in, walk the cliff, relax by the beach and watch sunset without rushing onward.',
+                schedule: [['8:00 AM', 'Breakfast and checkout from Munroe Island.'], ['9:00 AM', 'Depart for Varkala.'], ['11:00 AM', 'Check in and take a relaxed cliff-side lunch.'], ['2:00 PM', 'Beach time or an optional wellness session.'], ['5:30 PM', 'Cliff walk and sunset, followed by dinner.']],
+                note: 'Follow beach warning flags and lifeguard advice. Sea conditions can be rough during the monsoon.'
+            },
+            {
+                place: 'Varkala to Thiruvananthapuram and departure',
+                time: '9:00 AM onward',
+                transfer: 'Approx. 1-1.5 hr by road',
                 stay: 'Departure day',
-                meals: 'Breakfast and coastal lunch',
-                summary: 'Use a concise Varkala cliff stop, then continue to Thiruvananthapuram for the temple or nearby heritage alternative before a suitably late departure.',
-                schedule: [['7:00 AM', 'Breakfast and checkout from Munroe Island.'], ['8:00 AM', 'Depart for a concise Varkala cliff stop.'], ['11:30 AM', 'Continue to Thiruvananthapuram.'], ['1:00 PM', 'Lunch and a short rest.'], ['3:00 PM', 'Visit Sree Padmanabhaswamy Temple or Kuthiramalika Palace, then depart.']],
-                note: 'Temple entry is restricted to Hindus and strict traditional dress applies. Verify current timings and keep a generous airport or railway buffer.'
+                meals: 'Relaxed breakfast and lunch',
+                summary: 'Travel to Thiruvananthapuram for the temple or nearby heritage alternative, then continue to the airport or railway station.',
+                schedule: [['9:00 AM', 'Relaxed breakfast and checkout in Varkala.'], ['10:30 AM', 'Depart for Thiruvananthapuram.'], ['12:00 PM', 'Visit Sree Padmanabhaswamy Temple or Kuthiramalika Palace.'], ['1:30 PM', 'Lunch and a short rest.'], ['3:00 PM onward', 'Continue to the airport or railway station with a generous buffer.']],
+                note: 'Temple entry is restricted to Hindus and strict traditional dress applies. Verify current timings and rules before visiting.'
             }
         ],
         'plan-10-days.html': [
             {
-                place: 'Fort Kochi, Kadamakkudy Islands and Mattancherry',
-                time: '2 days',
-                transfer: 'Airport 1.5-2 hr; Kadamakkudy about 45-60 min each way',
-                stay: '2 nights in Fort Kochi',
-                meals: 'Daily breakfast plus two local dinners',
-                summary: 'Use Day 1 for Fort Kochi, then start Day 2 in Kadamakkudy\'s quieter island landscape before returning for Mattancherry, culture and food.',
-                schedule: [['Day 1, 2 PM', 'Check in and explore the Fort Kochi waterfront.'], ['Day 1, 7 PM', 'Relaxed local dinner in the heritage quarter.'], ['Day 2, 6 AM', 'Sunrise drive or cycle through Kadamakkudy\'s island roads and wetlands.'], ['Day 2, 11 AM', 'Return for Mattancherry heritage area and spice streets.'], ['Day 2, 6 PM', 'Kathakali performance and a food-led evening.']],
-                note: 'Treat Kadamakkudy as a living village, not a staged attraction. Keep the visit quiet, carry water and return before midday heat.'
+                place: 'Kochi arrival to Wayanad',
+                time: 'Early arrival onward',
+                transfer: 'Approx. 270 km / 6.5 hr planning allowance',
+                stay: 'Wayanad',
+                meals: 'Road meal and dinner',
+                summary: 'Use Kochi as the arrival gateway and protect the remainder of the day for the long transfer, check-in and rest.',
+                schedule: [['Arrival', 'Meet the pre-arranged road transfer in Kochi.'], ['Morning', 'Begin the Wayanad journey as early as practical.'], ['Midday', 'Take a proper meal and comfort break.'], ['Evening', 'Check in, dine and rest without adding sightseeing.']],
+                note: 'An early Kochi arrival is strongly recommended. Traffic, weather and ghat-road conditions can lengthen this journey.'
             },
             {
-                place: 'Kochi to Munnar',
-                time: '7:30 AM-7:00 PM',
-                transfer: 'Approx. 4-5.5 hr uphill',
+                place: 'Wayanad local circuit',
+                time: '8:00 AM-6:00 PM',
+                transfer: 'Local road circuit',
+                stay: 'Wayanad',
+                meals: 'Breakfast, local lunch and dinner',
+                summary: 'Choose one compact local circuit around coffee country, one viewpoint and one weather-appropriate heritage or nature experience.',
+                schedule: [['8:00 AM', 'Breakfast and begin the chosen circuit.'], ['9:00 AM', 'Coffee-country or plantation landscape.'], ['11:00 AM', 'One viewpoint or heritage stop.'], ['1:00 PM', 'Lunch.'], ['2:30 PM', 'One confirmed waterfall, cave, museum or nature option.'], ['5:00 PM', 'Return before dark.']],
+                note: 'Confirm weather, opening rules, seasonal access and physical difficulty before choosing trekking, waterfalls, caves or Kuruva Island.'
+            },
+            {
+                place: 'Wayanad to Munnar',
+                time: '6:00 AM-evening',
+                transfer: 'Approx. 360 km / 9 hr planning allowance',
                 stay: 'Munnar',
                 meals: 'Breakfast, road lunch and dinner',
-                summary: 'Travel into the tea country with selective road stops, then keep the evening light.',
-                schedule: [['7:30 AM', 'Breakfast, checkout and depart Kochi.'], ['10:30 AM', 'One scenic waterfall or viewpoint break.'], ['1:30 PM', 'Reach Munnar for lunch and check-in.'], ['4:00 PM', 'Short tea-country viewpoint or plantation walk.'], ['7:00 PM', 'Dinner and rest.']],
-                note: 'Hill-road weather and traffic vary. Avoid overloading the transfer day with distant viewpoints.'
+                summary: 'Use the full day for the itinerary\'s longest road transfer, with planned meal and comfort breaks.',
+                schedule: [['6:00 AM', 'Early breakfast and checkout.'], ['6:30 AM', 'Depart Wayanad.'], ['Late morning', 'Comfort and refreshment break.'], ['1:00 PM', 'Proper road lunch.'], ['Afternoon', 'Second comfort break before the hill section.'], ['Evening', 'Check in, dine and rest.']],
+                note: 'Do not schedule major sightseeing after arrival. Traffic, weather and roadworks can extend the journey.'
+            },
+            {
+                place: 'Munnar tea country',
+                time: '8:00 AM-7:00 PM',
+                transfer: 'One compact local circuit',
+                stay: 'Munnar',
+                meals: 'Breakfast, lunch and dinner',
+                summary: 'Build one realistic day around tea estates, Eravikulam when open and two nearby lake, viewpoint or waterfall stops.',
+                schedule: [['8:00 AM', 'Breakfast and depart for the selected local circuit.'], ['9:00 AM', 'Eravikulam when open or a tea-country alternative.'], ['12:30 PM', 'Lunch.'], ['2:00 PM', 'Choose two nearby lake, viewpoint or waterfall stops.'], ['6:00 PM', 'Optional cultural performance or a quiet evening.']],
+                note: 'Kolukkumalai sunrise, kayaking and additional waterfalls are alternatives, not items to combine into the same full day.'
             },
             {
                 place: 'Munnar to Thekkady',
+                time: '8:00 AM-7:00 PM',
+                transfer: 'Approx. 106 km / 4 hr planning allowance',
+                stay: 'Thekkady',
+                meals: 'Breakfast, road lunch and dinner',
+                summary: 'Move through plantation country, check in and choose one light spice or Periyar-area experience.',
+                schedule: [['8:00 AM', 'Breakfast and checkout.'], ['9:00 AM', 'Depart Munnar.'], ['1:00 PM', 'Reach Thekkady for lunch and check-in.'], ['4:00 PM', 'Choose a spice plantation or light confirmed activity.'], ['7:00 PM', 'Dinner and rest.']],
+                note: 'Hill-road conditions can change; keep the arrival activity flexible.'
+            },
+            {
+                place: 'Thekkady and Periyar region',
                 time: '8:00 AM-8:00 PM',
-                transfer: 'Approx. 3-4.5 hr through plantation roads',
+                transfer: 'Local transfers',
                 stay: 'Thekkady',
                 meals: 'Breakfast, lunch and dinner',
-                summary: 'Use the morning for one compact tea experience, then continue to Thekkady for a light spice-country evening.',
-                schedule: [['8:00 AM', 'Breakfast and one nearby tea experience.'], ['11:00 AM', 'Depart Munnar.'], ['2:00 PM', 'Reach Thekkady for lunch and check-in.'], ['4:30 PM', 'Spice-garden visit or another confirmed light activity.'], ['8:00 PM', 'Dinner and rest.']],
-                note: 'Keep the afternoon flexible because plantation-road conditions can lengthen the transfer.'
+                summary: 'Choose one pre-booked authorised nature experience and add the spice visit if it was not completed on Day 5.',
+                schedule: [['8:00 AM', 'Breakfast.'], ['Morning', 'Pre-booked Periyar Lake boat safari or another authorised nature activity.'], ['1:00 PM', 'Lunch and rest.'], ['3:30 PM', 'Spice experience if still required.'], ['6:00 PM', 'Optional Kathakali or Kalaripayattu programme.']],
+                note: 'Wildlife sightings are never guaranteed. Follow reserve, weather and authorised-operator guidance.'
             },
             {
-                place: 'Thekkady to Munroe Island',
-                time: '7:00 AM-9:00 PM',
-                transfer: 'Approx. 5-6.5 hr by road',
-                stay: 'Munroe Island homestay',
-                meals: 'Breakfast, road lunch and homestay dinner',
-                summary: 'Travel south with a proper comfort stop, then explore Munroe Island by small canoe.',
-                schedule: [['7:00 AM', 'Breakfast, checkout and depart Thekkady.'], ['12:30 PM', 'Road lunch and comfort stop.'], ['3:00 PM', 'Check in at Munroe Island.'], ['4:30 PM', 'Join the pre-booked small-canoe trip.'], ['8:00 PM', 'Local dinner.']],
-                note: 'Confirm the canoe point and pickup with the homestay; water and weather can alter the canal route.'
+                place: 'Thekkady to Alappuzha',
+                time: '7:30 AM-7:00 PM',
+                transfer: 'Approx. 164 km / 5 hr conservative allowance',
+                stay: 'Alappuzha',
+                meals: 'Breakfast, road lunch and dinner',
+                summary: 'Travel from the hills to the backwaters, check in and keep the arrival evening light.',
+                schedule: [['7:30 AM', 'Breakfast and checkout.'], ['8:30 AM', 'Depart Thekkady.'], ['1:30 PM', 'Reach Alappuzha for lunch and check-in.'], ['4:30 PM', 'Choose a light beach or lighthouse evening.'], ['7:00 PM', 'Dinner.']],
+                note: 'The 164 km / 5 hr allowance is deliberately conservative; do not place the main backwater cruise on this transfer day.'
             },
             {
-                place: 'Munroe Island to Thiruvananthapuram',
-                time: '8:00 AM-late evening',
-                transfer: 'Approx. 1.5-2 hr by road, then overnight rail',
-                stay: 'Overnight northbound rail journey',
-                meals: 'Breakfast, lunch and early dinner',
-                summary: 'Visit the temple or nearby Kuthiramalika Palace, then use a currently verified overnight rail connection towards Kozhikode.',
-                schedule: [['8:00 AM', 'Breakfast and depart Munroe Island.'], ['10:00 AM', 'Reach Thiruvananthapuram.'], ['11:00 AM', 'Temple visit or Kuthiramalika Palace alternative.'], ['1:00 PM', 'Lunch and rest.'], ['Evening', 'Board the verified northbound overnight rail connection.']],
-                note: 'Temple entry is restricted to Hindus and strict traditional dress applies. Verify both temple guidance and rail operation before travel.'
+                place: 'Alappuzha classic backwaters',
+                time: '8:00 AM-7:00 PM',
+                transfer: 'Local road and water transfers',
+                stay: 'Alappuzha',
+                meals: 'Breakfast, lunch arrangements depend on cruise choice, and dinner',
+                summary: 'Choose either a longer daytime houseboat experience or a shorter shikara ride, then add only one beach or heritage stop.',
+                schedule: [['8:00 AM', 'Breakfast and confirm the chosen water experience.'], ['Morning', 'Begin the daytime houseboat or shorter shikara option.'], ['Afternoon', 'Complete the water experience and return to the stay.'], ['4:30 PM', 'Choose Alappuzha Beach, Marari, the lighthouse or Ambalappuzha Temple when practical.'], ['7:00 PM', 'Dinner.']],
+                note: 'Cruise duration, meals and refreshments vary by operator and must be confirmed. Do not combine every optional land stop.'
             },
             {
-                place: 'Northbound rail arrival to Wayanad',
-                time: '2 days',
-                transfer: 'Road connection from the practical northbound rail arrival',
-                stay: '2 nights in Wayanad',
-                meals: 'Daily breakfast and local meals',
-                summary: 'Keep the rail-arrival day light, then use the second day for one compact Wayanad circuit.',
-                schedule: [['Day 7, morning', 'Arrive from the overnight rail journey and continue to Wayanad by road.'], ['Day 7, afternoon', 'Check in, have lunch and rest.'], ['Day 8, 8 AM', 'Start one weather-appropriate forest, plantation or heritage circuit.'], ['Day 8, 4 PM', 'Return before dark.']],
-                note: 'Confirm the current rail connection and pickup point before booking; do not add major sightseeing on the arrival day.'
+                place: 'Alappuzha to Varkala',
+                time: '9:00 AM-8:00 PM',
+                transfer: 'Approx. 107 km / 2 hr 15 min planning allowance',
+                stay: 'Varkala',
+                meals: 'Breakfast, lunch and dinner',
+                summary: 'Move to the coast, check in and use the afternoon for Varkala Cliff, beach time, cafes and sunset.',
+                schedule: [['9:00 AM', 'Breakfast and checkout.'], ['10:00 AM', 'Depart Alappuzha.'], ['12:30 PM', 'Check in and have lunch in Varkala.'], ['3:00 PM', 'Cliff walk and beach time.'], ['5:30 PM', 'Sunset and dinner.']],
+                note: 'Janardanaswamy Temple is optional. Follow beach warning flags and lifeguard advice.'
             },
             {
-                place: 'Wayanad to Valiyaparamba Islands and Bekal',
-                time: '2 days',
-                transfer: 'About 5-7 hr to north Kasaragod, then local coastal transfers',
-                stay: 'Valiyaparamba or Bekal',
-                meals: 'Daily breakfast and a Malabar food experience',
-                summary: 'End with north Kerala\'s less-crowded island backwaters: cruise Valiyaparamba, taste Malabar cooking and keep the final evening for Bekal Fort.',
-                schedule: [['Day 9, 7:30 AM', 'Leave Wayanad after breakfast for the north coast.'], ['Day 9, 2 PM', 'Reach the Valiyaparamba area, check in and have lunch.'], ['Day 9, 4 PM', 'Take a short cruise or canoe ride through the islands and village waterways.'], ['Day 10, 8 AM', 'Slow island morning, then continue to Bekal Fort and the coast.'], ['Day 10, 1 PM', 'Lunch followed by the airport or railway transfer with a generous buffer.']],
-                note: 'Organised cruises commonly use Kottappuram as an access point. Bekal pairs best with Kannur or Mangaluru connections, so confirm the departure before booking.'
+                place: 'Varkala to Thiruvananthapuram',
+                time: '9:00 AM-7:00 PM',
+                transfer: 'Approx. 42 km / 1-1.5 hr',
+                stay: 'Thiruvananthapuram',
+                meals: 'Breakfast, lunch and dinner',
+                summary: 'Visit Sree Padmanabhaswamy Temple when current rules allow, or use Kuthiramalika Palace as the nearby heritage alternative.',
+                schedule: [['9:00 AM', 'Breakfast and checkout.'], ['10:00 AM', 'Depart Varkala.'], ['11:30 AM', 'Temple visit or Kuthiramalika Palace alternative.'], ['1:30 PM', 'Lunch and rest.'], ['3:30 PM', 'Choose only one museum, heritage or Kovalam option.'], ['7:00 PM', 'Dinner and overnight in the city.']],
+                note: 'Temple entry is restricted to Hindus and strict traditional dress applies. Verify current rules and timings before visiting.'
+            },
+            {
+                place: 'Thiruvananthapuram departure',
+                time: 'According to confirmed departure',
+                transfer: 'City to airport or railway station',
+                stay: 'Departure day',
+                meals: 'Breakfast and meals according to departure time',
+                summary: 'Keep the final day deliberately light and leave a generous transfer buffer.',
+                schedule: [['Morning', 'Relaxed breakfast and checkout.'], ['If time permits', 'One short city stop only.'], ['Departure window', 'Continue to the airport or railway station with a generous buffer.']],
+                note: 'Confirm the departure terminal or station and current traffic conditions before leaving the hotel.'
             }
         ]
     };
@@ -804,7 +854,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const mediaCredits = {
             'plan-7-days.html': 'Offbeat photographs: <a href="https://commons.wikimedia.org/wiki/File:Kadamakkudi_island_in_Kerala.jpg" target="_blank" rel="noopener">Kadamakkudy by NOORAPARAPOYIL</a> and <a href="https://commons.wikimedia.org/wiki/File:Munroe_Island_tourism.jpg" target="_blank" rel="noopener">Munroe Island by Sanu N</a>, CC BY-SA 4.0. Varkala image from Kerala Tourism.',
-            'plan-10-days.html': 'Offbeat photographs: <a href="https://commons.wikimedia.org/wiki/File:Kadamakkudi_island_in_Kerala.jpg" target="_blank" rel="noopener">Kadamakkudy by NOORAPARAPOYIL</a> and <a href="https://commons.wikimedia.org/wiki/File:Munroe_Island_tourism.jpg" target="_blank" rel="noopener">Munroe Island by Sanu N</a>, CC BY-SA 4.0. Valiyaparamba image from Kerala Tourism.'
+            'plan-10-days.html': 'Destination photographs are used for educational itinerary planning. Verify access and operating conditions with the linked official tourism references before travel.'
         };
 
         if (mediaCredits[currentPlanFile]) {
@@ -1172,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadAssistantScript = () => {
         if (window.KeralaAssistantEngine || document.querySelector('[data-kerala-assistant-engine]')) return;
         const assistantEngineScript = document.createElement('script');
-        assistantEngineScript.src = 'kerala-assistant.js?v=20260811-temple1';
+        assistantEngineScript.src = 'kerala-assistant.js?v=20260812-itinerary1';
         assistantEngineScript.dataset.keralaAssistantEngine = 'true';
         assistantEngineScript.addEventListener('error', () => {
             console.error('The local Kerala Travel Guide could not be loaded.');
@@ -1187,7 +1237,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (document.querySelector('[data-kerala-plan-data]')) return;
         const planDataScript = document.createElement('script');
-        planDataScript.src = 'kerala-plan-data.js?v=20260811-temple1';
+        planDataScript.src = 'kerala-plan-data.js?v=20260812-itinerary1';
         planDataScript.dataset.keralaPlanData = 'true';
         planDataScript.addEventListener('load', loadAssistantScript, { once: true });
         planDataScript.addEventListener('error', () => console.error('The Kerala itinerary data could not be loaded.'));
@@ -1197,7 +1247,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.KeralaRouteCore) loadAssistantEngine();
     else {
         const routeCoreScript = document.createElement('script');
-        routeCoreScript.src = 'route-planner-core.js?v=20260811-temple1';
+        routeCoreScript.src = 'route-planner-core.js?v=20260812-itinerary1';
         routeCoreScript.dataset.keralaRouteCore = 'true';
         routeCoreScript.addEventListener('load', loadAssistantEngine, { once: true });
         routeCoreScript.addEventListener('error', () => console.error('The shared Kerala route planner could not be loaded.'));
@@ -1288,12 +1338,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const experienceCounter = finder.querySelector('[data-experience-count]');
     const experienceLimit = finder.querySelector('[data-experience-limit]');
     const experienceInputs = [...form.querySelectorAll('input[name="experiences"]')];
-    const validDays = [3, 5, 7, 10];
+    const validDays = [3, 5, 8, 11];
     const validTravellers = ['family', 'couple', 'students', 'solo', 'senior'];
     const validPaces = ['relaxed', 'balanced', 'active'];
     const validBudgets = ['value', 'comfortable', 'premium'];
     const validExperiences = ['hills', 'backwaters', 'beaches', 'wildlife', 'culture', 'food', 'wellness'];
-    const durationLevels = [3, 5, 7, 10];
+    const durationLevels = [3, 5, 8, 11];
     const experiencePriorityWeights = [30, 20, 10];
     let currentStep = 0;
     let experiencePriority = [];
@@ -1369,15 +1419,15 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         {
             id: 'seven-day',
-            publicName: '7-Day Classic + Offbeat Kerala',
-            days: 7,
+            publicName: '8-Day Classic + Offbeat Kerala',
+            days: 8,
             url: 'plan-7-days.html',
             route: 'Kochi - Kadamakkudy - Munnar - Thekkady - Munroe Island - Varkala - Thiruvananthapuram',
             pace: 'balanced',
             travellers: ['family', 'couple', 'solo'],
             experiences: ['hills', 'backwaters', 'beaches', 'wildlife', 'culture', 'food', 'wellness'],
             budgetFit: { value: 2, comfortable: 3, premium: 3 },
-            strengths: ['Famous and offbeat balance', 'Varkala coast', 'Thiruvananthapuram temple and palace heritage'],
+            strengths: ['Famous and offbeat balance', 'Full Varkala coastal stay', 'Thiruvananthapuram temple and palace heritage'],
             limitations: ['Several road transfers', 'More hotel changes than shorter plans'],
             adjustments: {
                 students: 'Use group rooms and shared transfers, then prioritise the three most important activities.',
@@ -1388,22 +1438,22 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         {
             id: 'ten-day',
-            publicName: '10-Day Kerala Deep Dive',
-            days: 10,
+            publicName: '11-Day Kerala Deep Dive',
+            days: 11,
             url: 'plan-10-days.html',
-            route: 'Kochi - Kadamakkudy - Munnar - Thekkady - Munroe Island - Thiruvananthapuram - Wayanad - Valiyaparamba - Bekal',
+            route: 'Kochi - Wayanad - Munnar - Thekkady - Alappuzha - Varkala - Thiruvananthapuram',
             pace: 'active',
             travellers: ['family', 'couple', 'solo'],
             experiences: ['hills', 'backwaters', 'beaches', 'wildlife', 'culture', 'food'],
             budgetFit: { value: 1, comfortable: 2.5, premium: 3 },
-            strengths: ['North-and-south coverage', 'Thiruvananthapuram temple and palace heritage', 'Hills, wildlife and coast'],
-            limitations: ['Major cross-Kerala transfers', 'No dedicated wellness programme'],
+            strengths: ['Wayanad and Munnar hill country', 'Alappuzha classic backwaters', 'Varkala and Thiruvananthapuram coastal heritage finish'],
+            limitations: ['Two major road-transfer days', 'No dedicated wellness programme'],
             adjustments: {
-                students: 'Use overnight transport selectively and protect one lighter day after the northbound transfer.',
-                senior: 'Use a private vehicle, add rest blocks and consider removing one northern stop to reduce major transfers.'
+                students: 'Use shared transport where practical and keep both long-transfer evenings free of sightseeing.',
+                senior: 'Use a private vehicle, add comfort breaks and consider splitting either long transfer.'
             },
             mapFrom: 'Kochi',
-            mapTo: 'Bekal'
+            mapTo: 'Thiruvananthapuram'
         },
         {
             id: 'student',
@@ -1581,7 +1631,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const buildPrimaryWarning = (evaluation, answers) => {
         if (evaluation.plan.id === 'ten-day' && answers.traveller === 'senior') {
-            return 'The ten-day selection is respected, but this route contains major transfers. Confirm mobility needs, use private transport and consider removing one northern stop.';
+            return 'The eleven-day selection is respected, but the Kochi-to-Wayanad and Wayanad-to-Munnar transfers are long. Confirm mobility needs, add comfort breaks and keep those evenings free.';
         }
         if (evaluation.missingExperiences.length) {
             const missingText = formatList(evaluation.missingExperiences.map(experience => experienceNames[experience].toLowerCase()));
@@ -1630,7 +1680,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const recovered = primary.missingExperiences.filter(experience => plan.experiences.includes(experience));
         if (plan.id === 'seven-day' && recovered.includes('beaches') && recovered.includes('wellness')) {
-            return 'Extend to seven days to include Varkala, coastal time and wellness experiences.';
+            return 'Extend to eight days to include a Varkala overnight, coastal time and wellness experiences.';
         }
         if (recovered.length) {
             return `${direction} to ${plan.days} days to include ${formatList(recovered.map(experience => experienceNames[experience].toLowerCase()))} while keeping the closest available route structure.`;
@@ -1922,11 +1972,11 @@ document.addEventListener('DOMContentLoaded', () => {
             { id: 5, answers: { days: 5, traveller: 'family', experiences: ['hills', 'wildlife', 'backwaters'], pace: 'balanced', budget: 'comfortable' }, primary: 'five-day' },
             { id: 6, answers: { days: 5, traveller: 'senior', experiences: ['backwaters', 'culture', 'wellness'], pace: 'relaxed', budget: 'comfortable' }, primary: 'senior' },
             { id: 7, answers: { days: 5, traveller: 'couple', experiences: ['backwaters', 'wellness'], pace: 'relaxed', budget: 'premium' }, primary: 'senior', publicName: '5-Day Relaxed Kochi + Kumarakom + Thiruvananthapuram' },
-            { id: 8, answers: { days: 7, traveller: 'family', experiences: ['beaches', 'wellness', 'backwaters'], pace: 'relaxed', budget: 'premium' }, primary: 'seven-day' },
-            { id: 9, answers: { days: 7, traveller: 'students', experiences: ['hills', 'beaches', 'culture'], pace: 'active', budget: 'value' }, primary: 'seven-day', alternative: 'student' },
-            { id: 10, answers: { days: 7, traveller: 'senior', experiences: ['backwaters', 'culture'], pace: 'relaxed', budget: 'comfortable' }, primary: 'seven-day', alternative: 'senior' },
-            { id: 11, answers: { days: 10, traveller: 'family', experiences: ['hills', 'wildlife', 'beaches'], pace: 'active', budget: 'premium' }, primary: 'ten-day' },
-            { id: 12, answers: { days: 10, traveller: 'senior', experiences: ['backwaters', 'wellness'], pace: 'relaxed', budget: 'premium' }, primary: 'ten-day', alternative: 'senior' },
+            { id: 8, answers: { days: 8, traveller: 'family', experiences: ['beaches', 'wellness', 'backwaters'], pace: 'relaxed', budget: 'premium' }, primary: 'seven-day' },
+            { id: 9, answers: { days: 8, traveller: 'students', experiences: ['hills', 'beaches', 'culture'], pace: 'active', budget: 'value' }, primary: 'seven-day', alternative: 'student' },
+            { id: 10, answers: { days: 8, traveller: 'senior', experiences: ['backwaters', 'culture'], pace: 'relaxed', budget: 'comfortable' }, primary: 'seven-day', alternative: 'senior' },
+            { id: 11, answers: { days: 11, traveller: 'family', experiences: ['hills', 'wildlife', 'beaches'], pace: 'active', budget: 'premium' }, primary: 'ten-day' },
+            { id: 12, answers: { days: 11, traveller: 'senior', experiences: ['backwaters', 'wellness'], pace: 'relaxed', budget: 'premium' }, primary: 'ten-day', alternative: 'senior' },
             { id: 13, answers: { days: 3, traveller: 'family', experiences: ['beaches', 'wellness'], pace: 'relaxed', budget: 'premium' }, primary: 'three-day', alternative: 'seven-day' },
             { id: 14, answers: { days: 5, traveller: 'solo', experiences: ['hills', 'wildlife'], pace: 'active', budget: 'value' }, primary: 'five-day' }
         ];

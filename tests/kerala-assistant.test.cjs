@@ -170,7 +170,7 @@ const sequenceC = runSequence([
     'We like hills and backwaters.',
     'We do not want too many long drives.',
     'What do you recommend?'
-], ['context-updated', 'plan-recommendation', 'context-updated', 'plan-recommendation', 'plan-recommendation']);
+], ['context-updated', 'custom-plan', 'context-updated', 'custom-plan', 'custom-plan']);
 const finalC = sequenceC.at(-1);
 check(finalC.context.adults === 2 && finalC.context.children === 2, 'Sequence C retains family counts');
 check(finalC.context.duration === 7, 'Sequence C retains duration');
