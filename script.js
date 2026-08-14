@@ -1247,7 +1247,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.KeralaRouteCore) loadAssistantEngine();
     else {
         const routeCoreScript = document.createElement('script');
-        routeCoreScript.src = 'route-planner-core.js?v=20260812-itinerary1';
+        routeCoreScript.src = 'route-planner-core.js?v=20260814-destinations1';
         routeCoreScript.dataset.keralaRouteCore = 'true';
         routeCoreScript.addEventListener('load', loadAssistantEngine, { once: true });
         routeCoreScript.addEventListener('error', () => console.error('The shared Kerala route planner could not be loaded.'));
