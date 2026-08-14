@@ -183,12 +183,28 @@
             access: 'Road transport is required; slippery paths and changing water conditions need extra care in rainy periods.'
         },
         vagamon: {
-            name: 'Vagamon', aliases: ['vagamon', 'wagamon'], page: 'destinations.html', days: '1-2 days',
+            name: 'Vagamon', aliases: ['vagamon', 'wagamon'], page: 'destination-vagamon.html', days: '1-2 days',
             summary: 'A quieter hill area of rolling grasslands, pine landscapes and winding roads.',
             interests: ['hills', 'nature', 'offbeat', 'adventure'], cost: 2, family: 2, senior: 1, monsoon: 1,
-            stay: 'A central hill stay reduces repeated driving; this site does not maintain a verified local shortlist.', stays: [],
+            stay: 'A central hill stay reduces repeated driving between the meadows, pine landscape and spiritual hills.', stays: ['Zostel Vagamon', 'Winter Vale Green Stay Resorts', 'Vaasta Vagamon'],
             food: 'Expect simple Kerala and South Indian food; confirm meal availability at remote stays.',
             access: 'Road access is required, and hill-road travel can be slow in rain or fog.'
+        },
+        gavi: {
+            name: 'Gavi', aliases: ['gavi', 'gavi eco tourism', 'gavi ecotourism'], page: 'destination-gavi.html', days: '1-2 days',
+            summary: 'A regulated forest eco-tourism destination of reservoirs, cardamom country, birdlife and guided nature programmes.',
+            interests: ['wildlife', 'nature', 'offbeat', 'adventure'], cost: 2, family: 2, senior: 1, monsoon: 1,
+            stay: 'Green Mansion is the official forest eco-lodge; Thekkady and Kumily provide more conventional bases.', stays: ['Green Mansion', 'Gavi Gate by Travel Inn', 'Spice Village'],
+            food: 'Confirm meals and dietary needs with the authorised programme or remote stay before arrival.',
+            access: 'Gavi requires road travel and advance confirmation of forest entry, permits and authorised programmes.'
+        },
+        'silent-valley': {
+            name: 'Silent Valley National Park', aliases: ['silent valley', 'silent valley national park'], page: 'destination-silent-valley.html', days: '1-2 days',
+            summary: 'A protected Palakkad rainforest known for exceptional Western Ghats biodiversity and conservation history.',
+            interests: ['wildlife', 'nature', 'offbeat', 'adventure'], cost: 2, family: 2, senior: 1, monsoon: 1,
+            stay: 'Stay outside the protected core around Mukkali, Mannarkkad or Attappadi and confirm the reporting point first.', stays: ['KTDC Tamarind Mannarkkad', 'Treetop Resort Silent Valley', 'Silent Valley River View Resorts'],
+            food: 'Arrange meals around Mukkali or Mannarkkad and carry only permitted supplies without leaving waste.',
+            access: 'Entry is controlled; confirm current permits, guided programmes, weather closures and forest rules directly with the park.'
         },
         idukki: {
             name: 'Idukki', aliases: ['idukki'], page: 'destinations.html', days: '1-2 days',
